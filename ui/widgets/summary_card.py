@@ -1,87 +1,49 @@
 from PySide6.QtWidgets import (
     QFrame,
     QLabel,
-    QVBoxLayout
+    QVBoxLayout,
+    QPushButton,
 )
 
 from PySide6.QtCore import Qt, Signal
 
 
-
 class SummaryCard(QFrame):
 
-    clicked = Signal()
+    refresh_requested = Signal()
 
-
-    def __init__(self):
-
+    def __init__(self, summary="Bugünün AI özeti henüz oluşturulmadı."):
         super().__init__()
 
+        self.setObjectName("summaryCard")
 
-        self.setObjectName(
-            "summaryCard"
-        )
+        self.setup_ui(summary)
 
-
-        self.setCursor(
-            Qt.PointingHandCursor
-        )
-
+    def setup_ui(self, summary):
 
         layout = QVBoxLayout(self)
 
+        layout.setContentsMargins(25, 25, 25, 25)
+        layout.setSpacing(15)
 
-        layout.setContentsMargins(
-            20,
-            20,
-            20,
-            20
-        )
+        
 
+        title = QLabel("🧠 AI Günlük Özeti")
+        title.setObjectName("summaryTitle")
 
-        self.title = QLabel(
-            "🌍 Günlük Özet"
-        )
+       
 
-        self.title.setAlignment(
-            Qt.AlignCenter
-        )
+        self.summary_label = QLabel(summary)
+        self.summary_label.setWordWrap(True)
+        self.summary_label.setAlignment(Qt.AlignTop)
+        self.summary_label.setObjectName("summaryText")
 
+    
 
-        self.summary_label = QLabel(
-            "AI özet hazırlanıyor..."
-        )
+        layout.addWidget(title)
+        layout.addWidget(self.summary_label)
+        layout.addStretch()
+        
 
-
-        self.summary_label.setWordWrap(
-            True
-        )
-
-
-        layout.addWidget(
-            self.title
-        )
-
-
-        layout.addWidget(
-            self.summary_label
-        )
-
-
-
-    def mousePressEvent(self, event):
-
-        self.clicked.emit()
-
-
-        super().mousePressEvent(
-            event
-        )
-
-
-
-    def update_summary(self, text):
-
-        self.summary_label.setText(
-            text
-        )
+    def set_summary(self, summary: str):
+        self.summary_label.setText(summary)

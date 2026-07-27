@@ -1,8 +1,6 @@
 from PySide6.QtWidgets import QMainWindow
 
 from ui.home_page import HomePage
-from ui.news_page import NewsPage
-from ui.summary_page import SummaryPage
 
 
 
@@ -72,11 +70,6 @@ class MainWindow(QMainWindow):
         self.home_page = HomePage()
 
 
-        self.home_page.news_requested.connect(
-            self.open_news_page
-        )
-
-
         self.current_page = self.home_page
 
 
@@ -88,57 +81,3 @@ class MainWindow(QMainWindow):
 
 
 
-
-
-
-
-    def open_news_page(self, country):
-
-
-        print(
-            f"Açılan sayfa: {country}"
-        )
-
-
-        self.clear_page()
-
-
-
-
-        if country == "summary":
-
-
-            self.summary_page = SummaryPage(
-                self.show_home_page
-            )
-
-
-            self.current_page = self.summary_page
-
-
-
-            self.setCentralWidget(
-                self.summary_page
-            )
-
-
-            return
-
-
-
-
-
-
-        self.news_page = NewsPage(
-            country,
-            self.show_home_page
-        )
-
-
-        self.current_page = self.news_page
-
-
-
-        self.setCentralWidget(
-            self.news_page
-        )

@@ -3,212 +3,320 @@
 =========================== */
 
 QWidget {
-
-    background-color: #deeaee;
-    color: #333333;
+    background-color: #F7F9FC;
+    color: #1F2937;
     font-family: "Segoe UI";
     font-size: 14px;
-
 }
 
-
+QLabel {
+    background-color: transparent;
+}
 
 /* ===========================
    Logo
 =========================== */
 
 QLabel#logo {
-
-    font-size: 70px;
-
+    font-size: 68px;
 }
-
-
 
 /* ===========================
    Başlık
 =========================== */
 
 QLabel#title {
-
     font-size: 34px;
     font-weight: bold;
-    color: #c94c4c;
-
+    color: #111827;
 }
-
-
 
 QLabel#subtitle {
-
-    font-size: 17px;
-    color: #555555;
-
+    font-size: 16px;
+    color: #6B7280;
 }
-
-
 
 /* ===========================
    Butonlar
 =========================== */
 
 QPushButton {
-
-    background-color: #b1cbbb;
-    color: #333333;
-
+    background-color: #2563EB;
+    color: white;
     border: none;
-    border-radius: 18px;
-
-    padding: 12px 20px;
-
-    font-size: 15px;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
     font-weight: bold;
-
 }
-
-
 
 QPushButton:hover {
-
-    background-color: #a0ee88;
-    color: white;
-
+    background-color: #1D4ED8;
 }
-
-
 
 QPushButton:pressed {
-
-    background-color: #c94c4c;
-    color: white;
-
+    background-color: #1E40AF;
 }
 
-
-
 /* ===========================
-   Haber Kartları
+   News Card
 =========================== */
 
 QFrame#newsCard {
-
-    background-color: white;
-
-    border: 1px solid #b1cbbb;
-
-    border-radius: 20px;
-
-    padding: 15px;
-
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 18px;
 }
-
-
 
 QFrame#newsCard:hover {
-
-    background-color: #eea29a;
-
-    border: 2px solid #c94c4c;
-
+    background: #EFF6FF;
+    border: 1px solid #2563EB;
 }
-
-
 
 /* ===========================
-   Haber Yazıları
+   News Image
 =========================== */
 
-QLabel {
-
-    color: #333333;
-
+QLabel#newsImage {
+    background: #E5E7EB;
+    border-radius: 14px;
+    min-height: 180px;
+    max-height: 180px;
 }
 
+/* ===========================
+   News Text
+=========================== */
 
+QLabel#newsSource {
+    color: #2563EB;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+QLabel#newsTime {
+    color: #9CA3AF;
+    font-size: 12px;
+}
 
 QLabel#newsTitle {
-
-    font-size: 18px;
-
+    font-size: 20px;
     font-weight: bold;
-
-    color: #c94c4c;
-
+    color: #111827;
 }
-
-
 
 QLabel#newsDescription {
-
+    color: #6B7280;
     font-size: 14px;
-
-    color: #555555;
-
 }
 
-
+QLabel#newsCategory {
+    color: #2563EB;
+    font-weight: bold;
+}
 
 /* ===========================
-   Scroll Alanı
+   Haberi Oku Butonu
 =========================== */
 
-QScrollArea {
-
+QPushButton#detailButton {
+    background: transparent;
+    color: #2563EB;
     border: none;
-
-    background-color: transparent;
-
+    font-weight: bold;
 }
 
-
-
-QScrollBar:vertical {
-
-    background: #deeaee;
-
-    width: 10px;
-
-    border-radius: 5px;
-
+QPushButton#detailButton:hover {
+    color: #1D4ED8;
+    text-decoration: underline;
 }
-
-
-
-QScrollBar::handle:vertical {
-
-    background: #b1cbbb;
-
-    border-radius: 5px;
-
-}
-
-
-
-QScrollBar::handle:vertical:hover {
-
-    background: #c94c4c;
-
-}
-
-
 
 /* ===========================
-   Özel Kartlar
+   Summary Card
 =========================== */
 
 QFrame#summaryCard {
-
-    background-color: #e0ea8c;
-
-    border-radius: 20px;
-
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 18px;
 }
 
-
-
 QFrame#summaryCard:hover {
+    border: 1px solid #2563EB;
+}
 
-    background-color: #e9b7b1;
+QLabel#summaryTitle {
+    font-size: 20px;
+    font-weight: bold;
+    color: #111827;
+}
 
+QLabel#summaryText {
+    font-size: 14px;
+    color: #6B7280;
+}
+
+QPushButton#summaryButton {
+    background: #2563EB;
+    color: white;
+    border-radius: 10px;
+}
+
+QPushButton#summaryButton:hover {
+    background: #1D4ED8;
+}
+
+/* ===========================
+   Headline Card
+=========================== */
+
+QFrame#headlineCard {
+    background: qlineargradient(
+        x1:0, y1:0,
+        x2:1, y2:1,
+        stop:0 #60A5FA,
+        stop:1 #2563EB
+    );
+    border-radius: 20px;
+}
+
+QLabel#headlineBadge {
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+QLabel#headlineCategory {
+    color: white;
+    font-size: 13px;
+}
+
+QLabel#headlineTitle {
+    color: white;
+    font-size: 26px;
+    font-weight: bold;
+}
+
+QLabel#headlineSubtitle {
+    color: #E5E7EB;
+    font-size: 15px;
+}
+
+/* ===========================
+   Trend Card
+=========================== */
+
+QFrame#trendCard {
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 18px;
+}
+
+QFrame#trendCard:hover {
+    border: 1px solid #2563EB;
+}
+
+QLabel#trendTitle {
+    color: #111827;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+QLabel#trendChip {
+    background: #DBEAFE;
+    color: #2563EB;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+/* ===========================
+   Market Card
+=========================== */
+
+QFrame#marketCard {
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 18px;
+}
+
+QFrame#marketCard:hover {
+    border: 1px solid #2563EB;
+}
+
+QLabel#marketTitle {
+    color: #111827;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+QLabel#marketName {
+    color: #374151;
+    font-size: 14px;
+}
+
+QLabel#marketValue {
+    color: #111827;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+QLabel#marketUp {
+    color: #16A34A;
+    font-weight: bold;
+}
+
+QLabel#marketDown {
+    color: #DC2626;
+    font-weight: bold;
+}
+
+/* ===========================
+   Ortak Kart Yazıları
+=========================== */
+
+QLabel#cardTitle {
+    font-size: 17px;
+    font-weight: bold;
+    color: #111827;
+}
+
+QLabel#cardValue {
+    font-size: 24px;
+    font-weight: bold;
+    color: #111827;
+}
+
+QLabel#cardChange {
+    font-size: 14px;
+    color: #16A34A;
+}
+
+QLabel#cardTag {
+    color: #6B7280;
+    font-size: 13px;
+}
+
+/* ===========================
+   Scroll
+=========================== */
+
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+}
+
+QScrollBar::handle:vertical {
+    background: #CBD5E1;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #94A3B8;
 }
