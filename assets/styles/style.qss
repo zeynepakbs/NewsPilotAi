@@ -1,0 +1,214 @@
+/* ===========================
+   Genel
+=========================== */
+
+QWidget {
+
+    background-color: #deeaee;
+    color: #333333;
+    font-family: "Segoe UI";
+    font-size: 14px;
+
+}
+
+
+
+/* ===========================
+   Logo
+=========================== */
+
+QLabel#logo {
+
+    font-size: 70px;
+
+}
+
+
+
+/* ===========================
+   Başlık
+=========================== */
+
+QLabel#title {
+
+    font-size: 34px;
+    font-weight: bold;
+    color: #c94c4c;
+
+}
+
+
+
+QLabel#subtitle {
+
+    font-size: 17px;
+    color: #555555;
+
+}
+
+
+
+/* ===========================
+   Butonlar
+=========================== */
+
+QPushButton {
+
+    background-color: #b1cbbb;
+    color: #333333;
+
+    border: none;
+    border-radius: 18px;
+
+    padding: 12px 20px;
+
+    font-size: 15px;
+    font-weight: bold;
+
+}
+
+
+
+QPushButton:hover {
+
+    background-color: #a0ee88;
+    color: white;
+
+}
+
+
+
+QPushButton:pressed {
+
+    background-color: #c94c4c;
+    color: white;
+
+}
+
+
+
+/* ===========================
+   Haber Kartları
+=========================== */
+
+QFrame#newsCard {
+
+    background-color: white;
+
+    border: 1px solid #b1cbbb;
+
+    border-radius: 20px;
+
+    padding: 15px;
+
+}
+
+
+
+QFrame#newsCard:hover {
+
+    background-color: #eea29a;
+
+    border: 2px solid #c94c4c;
+
+}
+
+
+
+/* ===========================
+   Haber Yazıları
+=========================== */
+
+QLabel {
+
+    color: #333333;
+
+}
+
+
+
+QLabel#newsTitle {
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    color: #c94c4c;
+
+}
+
+
+
+QLabel#newsDescription {
+
+    font-size: 14px;
+
+    color: #555555;
+
+}
+
+
+
+/* ===========================
+   Scroll Alanı
+=========================== */
+
+QScrollArea {
+
+    border: none;
+
+    background-color: transparent;
+
+}
+
+
+
+QScrollBar:vertical {
+
+    background: #deeaee;
+
+    width: 10px;
+
+    border-radius: 5px;
+
+}
+
+
+
+QScrollBar::handle:vertical {
+
+    background: #b1cbbb;
+
+    border-radius: 5px;
+
+}
+
+
+
+QScrollBar::handle:vertical:hover {
+
+    background: #c94c4c;
+
+}
+
+
+
+/* ===========================
+   Özel Kartlar
+=========================== */
+
+QFrame#summaryCard {
+
+    background-color: #e0ea8c;
+
+    border-radius: 20px;
+
+}
+
+
+
+QFrame#summaryCard:hover {
+
+    background-color: #e9b7b1;
+
+}
