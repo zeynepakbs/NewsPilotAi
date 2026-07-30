@@ -1,0 +1,212 @@
+RSS_SOURCES = [
+
+    # =========================
+    # TÜRKİYE
+    # =========================
+
+    {
+        "id": "trt",
+        "name": "TRT Haber",
+        "country": "tr",
+        "language": "tr",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://www.trthaber.com/sondakika_articles.rss",
+    },
+    {
+        "id": "aa",
+        "name": "Anadolu Ajansı",
+        "country": "tr",
+        "language": "tr",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://www.aa.com.tr/tr/rss/default?cat=guncel",
+    },
+    {
+        "id": "ntv",
+        "name": "NTV",
+        "country": "tr",
+        "language": "tr",
+        "type": "rss",
+        "priority": 4,
+        "enabled": True,
+        "url": "https://www.ntv.com.tr/son-dakika.rss",
+    },
+    {
+        "id": "cnnturk",
+        "name": "CNN Türk",
+        "country": "tr",
+        "language": "tr",
+        "type": "rss",
+        "priority": 4,
+        "enabled": True,
+        "url": "https://www.cnnturk.com/feed/rss/all/news",
+    },
+    {
+        "id": "haberturk",
+        "name": "Habertürk",
+        "country": "tr",
+        "language": "tr",
+        "type": "rss",
+        "priority": 4,
+        "enabled": True,
+        "url": "https://www.haberturk.com/rss",
+    },
+    {
+        "id": "hurriyet",
+        "name": "Hürriyet",
+        "country": "tr",
+        "language": "tr",
+        "type": "rss",
+        "priority": 3,
+        "enabled": True,
+        "url": "https://www.hurriyet.com.tr/rss/anasayfa",
+    },
+
+    # =========================
+    # AMERİKA
+    # =========================
+
+    {
+        "id": "reuters_us",
+        "name": "Reuters",
+        "country": "us",
+        "language": "en",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://feeds.reuters.com/reuters/topNews",
+    },
+    {
+        "id": "ap",
+        "name": "Associated Press",
+        "country": "us",
+        "language": "en",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://apnews.com/rss",
+    },
+    {
+        "id": "nyt",
+        "name": "New York Times",
+        "country": "us",
+        "language": "en",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+    },
+    {
+        "id": "cnn",
+        "name": "CNN",
+        "country": "us",
+        "language": "en",
+        "type": "rss",
+        "priority": 4,
+        "enabled": True,
+        "url": "http://rss.cnn.com/rss/edition.rss",
+    },
+    {
+        "id": "fox",
+        "name": "Fox News",
+        "country": "us",
+        "language": "en",
+        "type": "rss",
+        "priority": 3,
+        "enabled": True,
+        "url": "https://moxie.foxnews.com/google-publisher/latest.xml",
+    },
+
+    # =========================
+    # AVRUPA
+    # =========================
+
+    {
+        "id": "bbc",
+        "name": "BBC",
+        "country": "eu",
+        "language": "en",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://feeds.bbci.co.uk/news/rss.xml",
+    },
+    {
+        "id": "guardian",
+        "name": "The Guardian",
+        "country": "eu",
+        "language": "en",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://www.theguardian.com/world/rss",
+    },
+    {
+        "id": "dw",
+        "name": "DW",
+        "country": "eu",
+        "language": "en",
+        "type": "rss",
+        "priority": 4,
+        "enabled": True,
+        "url": "https://rss.dw.com/rdf/rss-en-all",
+    },
+    {
+        "id": "euronews",
+        "name": "Euronews",
+        "country": "eu",
+        "language": "en",
+        "type": "rss",
+        "priority": 4,
+        "enabled": True,
+        "url": "https://www.euronews.com/rss",
+    },
+
+    # =========================
+    # ASYA
+    # =========================
+
+    {
+        "id": "nikkei",
+        "name": "Nikkei Asia",
+        "country": "asia",
+        "language": "en",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://asia.nikkei.com/rss/feed/nar",
+    },
+    {
+        "id": "scmp",
+        "name": "South China Morning Post",
+        "country": "asia",
+        "language": "en",
+        "type": "rss",
+        "priority": 5,
+        "enabled": True,
+        "url": "https://www.scmp.com/rss/91/feed",
+    },
+    {
+        "id": "japantimes",
+        "name": "Japan Times",
+        "country": "asia",
+        "language": "en",
+        "type": "rss",
+        "priority": 4,
+        "enabled": True,
+        "url": "https://www.japantimes.co.jp/feed/",
+    },
+    {
+        "id": "straitstimes",
+        "name": "The Straits Times",
+        "country": "asia",
+        "language": "en",
+        "type": "rss",
+        "priority": 4,
+        "enabled": True,
+        "url": "https://www.straitstimes.com/news/world/rss.xml",
+    },
+]

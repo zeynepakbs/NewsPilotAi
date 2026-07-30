@@ -1,4 +1,4 @@
-from services.summary_service import SummaryService
+from services.news.sumarizer.plain_summary import SummaryService
 
 service = SummaryService()
 

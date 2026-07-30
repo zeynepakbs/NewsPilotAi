@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 
 from PySide6.QtCore import Qt
 
-from services.summary_service import SummaryService
+from services.news.sumarizer.plain_summary import SummaryService
 
 
 

@@ -1,4 +1,4 @@
-from services.news_service import NewsService
+from services.news.news_service import NewsService
 
 service = NewsService()
 

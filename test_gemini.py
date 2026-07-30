@@ -1,4 +1,4 @@
-from services.ai_service import GeminiService
+from services.news.ai.ai_service import GeminiService
 
 gemini = GeminiService()
 
