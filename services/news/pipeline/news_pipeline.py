@@ -9,7 +9,7 @@ from services.news.ranking.category_classifier import CategoryClassifier
 from services.news.ranking.importance_calculator import ImportanceCalculator
 
 
-from services.news.ai.ai_service import AIService
+from services.news.ai.gemini_service import GeminiService
 
 
 from services.news.agenda.agenda_selector import AgendaSelector
@@ -29,19 +29,15 @@ class NewsPipeline:
 
             "avrupa": EuropeCollector(),
 
-            "asya": AsiaCollector()
+            "asya": AsiaCollector(),
 
         }
 
 
         self.duplicate_detector = DuplicateDetector()
-
         self.category_classifier = CategoryClassifier()
-
         self.importance_calculator = ImportanceCalculator()
-
-        self.ai_service = AIService()
-
+        self.gemini_service = GeminiService()
         self.agenda_selector = AgendaSelector()
 
 
@@ -126,6 +122,9 @@ class NewsPipeline:
 
 
                 # 6 - Gemini analiz
+                # NOT: analyze_clusters HeadlineCluster nesnelerini
+                # (summary/importance_score/is_newsworthy alanları
+                # işlenmiş halde) doğrudan döndürür; dict sarmalayıcı yoktur.
 
                 analyzed = self.ai_service.analyze_clusters(
                     candidate_clusters
@@ -133,77 +132,13 @@ class NewsPipeline:
 
 
 
-                # 7 - AI sonuçlarını cluster içine işle
+                # 7 - Haber değeri olmayanları ele
 
-                final_clusters = []
-
-
-
-                for index, item in enumerate(analyzed):
-
-
-                    cluster = candidate_clusters[index]
-
-
-                    analysis = item.get(
-                        "analysis",
-                        {}
-                    )
-
-
-
-                    cluster.summary = analysis.get(
-                        "summary",
-                        ""
-                    )
-
-
-
-                    cluster.keywords = analysis.get(
-                        "keywords",
-                        []
-                    )
-
-
-
-                    cluster.importance_reason = analysis.get(
-                        "importance_reason",
-                        ""
-                    )
-
-
-
-                    cluster.is_newsworthy = analysis.get(
-                        "is_newsworthy",
-                        True
-                    )
-
-
-
-                    cluster.importance_score = analysis.get(
-                        "importance_score",
-                        cluster.score
-                    )
-
-
-
-                    ai_category = analysis.get(
-                        "category"
-                    )
-
-
-
-                    if ai_category:
-
-                        cluster.category = ai_category
-
-
-
-                    if cluster.is_newsworthy:
-
-                        final_clusters.append(
-                            cluster
-                        )
+                final_clusters = [
+                    cluster
+                    for cluster in analyzed
+                    if getattr(cluster, "is_newsworthy", True)
+                ]
 
 
 

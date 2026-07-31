@@ -1,11 +1,12 @@
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from services.news.collectors.asia_collector import AsiaCollector
 from services.news.collectors.europe_collector import EuropeCollector
 from services.news.collectors.turkey_collector import TurkeyCollector
 from services.news.collectors.us_collector import USCollector
+from services.news.collectors.asia_collector import AsiaCollector
 from services.news.models.article import Article
+from services.news.region_detector import RegionDetector
 
 
 class NewsService:
@@ -15,8 +16,9 @@ class NewsService:
             "tr": TurkeyCollector(),
             "us": USCollector(),
             "eu": EuropeCollector(),
-            "asia": AsiaCollector(),
+            "as": AsiaCollector(),
         }
+        self.region_detector = RegionDetector()
 
     def get_news(self, country: str) -> List[Article]:
         collector = self.collectors.get(country.lower())
@@ -36,7 +38,7 @@ class NewsService:
         return self.get_news("eu")
 
     def get_asia_news(self):
-        return self.get_news("asia")
+        return self.get_news("as")
 
     def get_combined_news(self):
 
@@ -49,7 +51,8 @@ class NewsService:
                 news = collector.collect()
 
                 for article in news:
-                    article.region = region
+                    article.region = self.region_detector.detect(region, article)
+                    article.lang = "tr" if region == "tr" else "en"
 
                 return news
 

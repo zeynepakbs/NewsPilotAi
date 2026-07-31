@@ -1,8 +1,8 @@
 class ImportanceCalculator:
 
     # 15 kanalda + Siyaset  -> 15 * 5  = 75  (kritik üst sınır)
-    # 10 kanalda + Borsa    -> 10 * 3  = 30  (az kritik bandı)
-    # Diğer kategoriler bu iki referans noktasına göre ölçeklendi.
+    # 10 kanalda + Borsa    -> 10 * 3  = 30
+    # Diğer kategoriler bu referans noktasına göre ölçeklendi.
     CATEGORY_WEIGHTS = {
         "Siyaset": 5,
         "Ekonomi": 5,
@@ -18,10 +18,6 @@ class ImportanceCalculator:
 
     KRITIK_MIN = 40
     KRITIK_MAX = 75
-
-    AZ_KRITIK_MIN = 20
-    AZ_KRITIK_MAX = 40
-
 
     def calculate(self, clusters):
 
@@ -39,7 +35,11 @@ class ImportanceCalculator:
                 1
             )
 
-            score = cluster.source_count * weight
+            # reliability_score = benzersiz kaynak sayısı * o kaynakların
+            # güvenilirlik ağırlığı (RSS_SOURCES priority alanı).
+            # Böylece hem "kaç kaynakta geçti" hem de "o kaynaklar ne kadar
+            # güvenilir" aynı anda puana yansıyor.
+            score = cluster.reliability_score * weight
 
             cluster.score = score
 
@@ -61,13 +61,10 @@ class ImportanceCalculator:
     def tier_for(cls, score):
         """
         Bir önem puanının hangi banda düştüğünü döndürür:
-        'kritik', 'az_kritik' ya da None (gösterilmez).
+        'kritik' ya da None (gösterilmez).
         """
 
         if cls.KRITIK_MIN <= score <= cls.KRITIK_MAX:
             return "kritik"
-
-        if cls.AZ_KRITIK_MIN <= score < cls.KRITIK_MIN:
-            return "az_kritik"
 
         return None

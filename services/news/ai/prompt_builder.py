@@ -1,13 +1,36 @@
 class PromptBuilder:
 
+    # Bir kümede çok kaynaklı haberlerde onlarca makale birikebiliyor;
+    # hepsinin (uzun) açıklamasını tek prompt'a basmak MAX_TOKENS hatasına
+    # yol açıyordu. Temsilci olarak en fazla N makale, her biri kırpılmış
+    # açıklamayla gönderiliyor - analiz kalitesini etkilemeden token
+    # kullanımını sınırlı tutar.
+    MAX_ARTICLES_IN_PROMPT = 6
+    MAX_DESCRIPTION_CHARS = 350
+
+
     @staticmethod
-    def build_analysis_prompt(cluster, sources: list[str]) -> str:
+    def _truncate(text, limit):
+
+        if not text:
+            return text
+
+        if len(text) <= limit:
+            return text
+
+        return text[:limit].rsplit(" ", 1)[0] + "..."
+
+
+    @classmethod
+    def build_analysis_prompt(cls, cluster, sources: list[str]) -> str:
+
+        representative_articles = cluster.articles[:cls.MAX_ARTICLES_IN_PROMPT]
 
         articles_text = "\n".join(
             [
                 f"- Başlık: {article.title}\n"
-                f"  Açıklama: {article.description}"
-                for article in cluster.articles
+                f"  Açıklama: {cls._truncate(article.description, cls.MAX_DESCRIPTION_CHARS)}"
+                for article in representative_articles
             ]
         )
 
@@ -18,6 +41,12 @@ Sen dünyanın en büyük haber ajansında çalışan kıdemli bir haber editör
 
 Görevin:
 Verilen haber kümesini analiz etmek, gerçek gündem değerini ölçmek ve gereksiz içerikleri elemek.
+
+ÖNEMLİ DİL KURALI:
+Analiz talimatları Türkçe olsa bile, JSON çıktısındaki TÜM metin alanları
+("summary", "importance_reason", "keywords" içindeki her öğe) İNGİLİZCE
+olmalı. Haber içerikleri Türkçe olsa dahi özeti İngilizce yaz. Sadece
+"category" alanı aşağıdaki listedeki Türkçe kategori adlarından biri olmalı.
 
 HABER BAŞLIĞI:
 {cluster.title}
@@ -112,7 +141,8 @@ Kritik gündem
 
 
 
-SADECE JSON FORMATINDA CEVAP VER:
+SADECE JSON FORMATINDA CEVAP VER (summary, importance_reason ve keywords
+alanlarındaki TÜM metinler İngilizce olmalı, category Türkçe kalmalı):
 
 
 {{

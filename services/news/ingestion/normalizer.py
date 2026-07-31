@@ -28,36 +28,23 @@ class Normalizer:
 
         for article in articles:
 
+            # Görüntülenecek başlık: sadece gürültü kelimelerini ve
+            # fazla boşlukları temizliyoruz, büyük/küçük harf ve
+            # noktalama korunuyor ki arayüzde düzgün görünsün.
+            title = article.title
 
-            title = article.title.lower()
-
-
-            title = unicodedata.normalize(
-                "NFKD",
-                title
-            )
-
-            title = title.encode(
-                "ascii",
-                "ignore"
-            ).decode(
-                "utf-8"
-            )
-
+            lowered = title.lower()
 
             for word in self.REMOVE_WORDS:
 
-                title = title.replace(
-                    word,
-                    ""
-                )
+                idx = lowered.find(word)
 
+                while idx != -1:
 
-            title = re.sub(
-                r"[^\w\s]",
-                " ",
-                title
-            )
+                    title = title[:idx] + title[idx + len(word):]
+                    lowered = lowered[:idx] + lowered[idx + len(word):]
+
+                    idx = lowered.find(word)
 
 
             title = re.sub(

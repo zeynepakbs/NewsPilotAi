@@ -13,4 +13,4 @@ class AsiaCollector:
         self.provider = RSSProvider()
 
     def collect(self) -> List[Article]:
-        return self.provider.fetch_country_news("asia")
+        return self.provider.fetch_country_news("as")

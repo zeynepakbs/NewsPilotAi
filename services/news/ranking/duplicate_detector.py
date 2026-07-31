@@ -4,6 +4,30 @@ from services.news.ranking.headline_cluster import HeadlineCluster
 
 class DuplicateDetector:
 
+    STOP_WORDS = {
+        "ve",
+        "ile",
+        "bir",
+        "bu",
+        "su",
+        "son",
+        "yeni",
+        "icin",
+        "hakkinda",
+        "olarak",
+        "acikladi",
+        "bildirdi",
+        "duyurdu",
+        "the",
+        "a",
+        "an",
+        "new",
+        "of",
+        "to",
+        "in",
+        "on"
+    }
+
 
     def _normalize(self, text: str):
 
@@ -25,36 +49,105 @@ class DuplicateDetector:
 
 
 
+    def _tokenize(self, text: str):
+
+        text = self._normalize(text)
+
+        words = text.split()
+
+        result = set()
+
+
+        for word in words:
+
+            if word in self.STOP_WORDS:
+                continue
+
+
+            if len(word) < 3:
+                continue
+
+
+            suffixes = [
+                "lari",
+                "leri",
+                "lar",
+                "ler",
+                "nin",
+                "dan",
+                "den",
+                "dir",
+                "tir",
+                "ini",
+                "unu",
+                "ile"
+            ]
+
+
+            for suffix in suffixes:
+
+                if (
+                    word.endswith(suffix)
+                    and len(word) > len(suffix) + 3
+                ):
+
+                    word = word[:-len(suffix)]
+                    break
+
+
+            result.add(word)
+
+
+        return result
+
+
+
     def _similarity(
         self,
         title1: str,
         title2: str
     ):
 
-        title1 = self._normalize(title1)
-        title2 = self._normalize(title2)
-
-
-        words1 = set(title1.split())
-        words2 = set(title2.split())
+        words1 = self._tokenize(title1)
+        words2 = self._tokenize(title2)
 
 
         if not words1 or not words2:
             return 0
 
 
-        common = words1 & words2
-        union = words1 | words2
+        common = words1.intersection(words2)
 
 
-        return len(common) / len(union)
+        smaller = min(
+            len(words1),
+            len(words2)
+        )
+
+
+        return len(common) / smaller
+
+
+
+    def _choose_title(
+        self,
+        articles: list[Article]
+    ):
+
+        return max(
+            articles,
+            key=lambda article: (
+                article.priority,
+                len(article.title)
+            )
+        ).title
 
 
 
     def remove_duplicates(
         self,
         articles: list[Article],
-        threshold: float = 0.35
+        threshold: float = 0.45
     ):
 
         groups = []
@@ -67,16 +160,28 @@ class DuplicateDetector:
 
             for group in groups:
 
+
+                first_article = group[0]
+
+
+                # farklı diller aynı cluster olmasın
+                if article.lang != first_article.lang:
+                    continue
+
+
+
                 similarity = self._similarity(
                     article.title,
-                    group[0].title
+                    first_article.title
                 )
 
 
                 if similarity >= threshold:
 
                     group.append(article)
+
                     added = True
+
                     break
 
 
@@ -94,16 +199,10 @@ class DuplicateDetector:
 
         for group in groups:
 
-            # En uzun başlığı temsilci olarak seç
-            title = max(
-                group,
-                key=lambda x: len(x.title)
-            ).title
-
 
             cluster = HeadlineCluster(
 
-                title=title,
+                title=self._choose_title(group),
 
                 articles=group,
 
@@ -112,9 +211,8 @@ class DuplicateDetector:
             )
 
 
-            clusters.append(
-                cluster
-            )
+            clusters.append(cluster)
+
 
 
         return clusters

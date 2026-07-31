@@ -15,13 +15,15 @@ from workers.news_worker import NewsWorker
 
 
 # NewsService.get_combined_news() içinde collector anahtarları
-# ("tr", "us", "eu", "asia") region olarak atanıyor; burada da
-# aynı kodları kullanmak zorundayız, yoksa filtre hep boş döner.
+# ("tr", "us", "eu", "as") kaynak bölge kodu olarak kullanılıyor.
+# Ancak UI burada artık insan okunabilir İngilizce bölge adlarına sahip.
 REGION_LABELS = [
-    ("tr", "🇹🇷 TÜRKİYE"),
-    ("us", "🇺🇸 AMERİKA"),
-    ("asia", "ASYA"),
-    ("eu", "🇪🇺 AVRUPA"),
+    ("Turkey", "🇹🇷 TURKEY"),
+    ("USA", "🇺🇸 USA"),
+    ("Europe", "🇪🇺 EUROPE"),
+    ("Asia", "🌏 ASIA"),
+    ("Middle East", "🌍 MIDDLE EAST"),
+    ("Global", "🌐 GLOBAL"),
 ]
 
 
@@ -34,14 +36,11 @@ def _get(item, key, default=""):
 
 class HomePage(QWidget):
 
-    def __init__(self, on_show_critical=None, on_show_less_critical=None):
+    def __init__(self):
         super().__init__()
 
         self.thread = None
         self.worker = None
-
-        self.on_show_critical = on_show_critical
-        self.on_show_less_critical = on_show_less_critical
 
         self.setup_ui()
         self.load_dashboard()
@@ -73,23 +72,6 @@ class HomePage(QWidget):
         header_row.addWidget(title)
 
         header_row.addStretch()
-
-
-        if self.on_show_critical:
-
-            critical_button = QPushButton("Kritik Haberler")
-            critical_button.setCursor(Qt.PointingHandCursor)
-            critical_button.clicked.connect(self.on_show_critical)
-            header_row.addWidget(critical_button)
-
-
-        if self.on_show_less_critical:
-
-            less_critical_button = QPushButton("Az Kritik Haberler")
-            less_critical_button.setCursor(Qt.PointingHandCursor)
-            less_critical_button.clicked.connect(self.on_show_less_critical)
-            header_row.addWidget(less_critical_button)
-
 
         self.main_layout.addLayout(header_row)
 

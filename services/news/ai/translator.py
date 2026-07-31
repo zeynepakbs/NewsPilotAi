@@ -1,85 +1,278 @@
 from dataclasses import replace
 
-from services.news.ai.gemini_client import GeminiClient
 
+from services.news.ai.gemini_client import GeminiService
 
 class Translator:
 
+    CHUNK_SIZE = 8
+    MAX_DESCRIPTION_CHARS = 400
+
+
     def __init__(self):
-        self.client = GeminiClient()
+
+        self.client = GeminiService()
+
 
     def translate_articles(self, articles):
 
         to_translate = [
-            (i, a)
-            for i, a in enumerate(articles)
-            if a.lang != "tr"
+
+            (i, article)
+
+            for i, article in enumerate(articles)
+
+            if article.lang != "en"
+
         ]
 
+
         if not to_translate:
+
             return articles
 
-        items = ""
-
-        for idx, (i, article) in enumerate(to_translate):
-            items += f"""
-{idx})
-
-Başlık:
-{article.title}
-
-Açıklama:
-{article.description}
-
-"""
-
-        prompt = f"""
-Sen profesyonel bir haber editörü ve çevirmensin.
-
-Aşağıdaki haberlerin başlık ve açıklamalarını
-doğal ve akıcı Türkçeye çevir.
-
-Anlamı değiştirme.
-
-SADECE JSON döndür.
-
-[
-  {{
-    "index":0,
-    "title":"",
-    "description":""
-  }}
-]
-
-Haberler:
-
-{items}
-"""
-
-        try:
-            response = self.client.ask(prompt)
-            translations = self.client.parse_json(response)
-
-        except Exception as e:
-            print(
-                "[translate_articles] Çeviri başarısız, "
-                f"orijinal haberler döndürülüyor. Hata: {e}"
-            )
-            return articles
 
         result = list(articles)
 
-        for item in translations:
 
-            local_index = item["index"]
-            original_index = to_translate[local_index][0]
+        for start in range(
 
-            original_article = result[original_index]
+            0,
 
-            result[original_index] = replace(
-                original_article,
-                title=item["title"],
-                description=item["description"],
+            len(to_translate),
+
+            self.CHUNK_SIZE
+
+        ):
+
+            chunk = to_translate[
+
+                start:
+
+                start + self.CHUNK_SIZE
+
+            ]
+
+
+            self._translate_chunk(
+
+                chunk,
+
+                result
+
             )
 
+
         return result
+
+
+
+    def _truncate(
+
+        self,
+
+        text
+
+    ):
+
+        if not text:
+
+            return ""
+
+
+        if len(text) <= self.MAX_DESCRIPTION_CHARS:
+
+            return text
+
+
+        return (
+
+            text[
+
+                :self.MAX_DESCRIPTION_CHARS
+
+            ]
+
+            .rsplit(
+
+                " ",
+
+                1
+
+            )[0]
+
+            + "..."
+
+        )
+
+
+
+    def _translate_chunk(
+
+        self,
+
+        chunk,
+
+        result
+
+    ):
+
+
+        items = ""
+
+
+        for idx, (_, article) in enumerate(chunk):
+
+            items += f"""
+
+{idx})
+
+Title:
+{article.title}
+
+Description:
+{self._truncate(article.description)}
+
+"""
+
+
+
+        prompt = f"""
+
+You are a professional translator.
+
+Translate every news title and description into fluent English.
+
+Rules:
+
+- Preserve the original meaning.
+- Preserve names.
+- Preserve numbers.
+- Do NOT summarize.
+- Do NOT explain.
+- Do NOT omit information.
+- Return ONLY a valid JSON array.
+- Do not use markdown.
+- Do not add extra text.
+
+JSON format:
+
+[
+    {{
+        "index": 0,
+        "title": "...",
+        "description": "..."
+    }}
+]
+
+
+News:
+
+{items}
+
+"""
+
+
+        try:
+
+            response = self.client.ask(
+
+                prompt
+
+            )
+
+
+            translations = self.client.parse_json(
+
+                response
+
+            )
+
+
+            if isinstance(translations, dict):
+
+                translations = translations.get(
+
+                    "translations",
+
+                    []
+
+                )
+
+
+            if not isinstance(translations, list):
+
+                print(
+
+                    "[Translator] Beklenmeyen format:",
+
+                    type(translations)
+
+                )
+
+                return
+
+
+
+        except Exception as e:
+
+            print(
+
+                "[Translator]",
+
+                e
+
+            )
+
+            return
+
+
+
+        for item in translations:
+
+
+            try:
+
+                local_index = item["index"]
+
+
+                original_index = chunk[
+
+                    local_index
+
+                ][0]
+
+
+                article = result[
+
+                    original_index
+
+                ]
+
+
+                result[
+
+                    original_index
+
+                ] = replace(
+
+                    article,
+
+                    title=item["title"],
+
+                    description=item["description"],
+
+                    lang="en"
+
+                )
+
+
+            except Exception as e:
+
+                print(
+
+                    "[Translator item error]",
+
+                    e
+
+                )

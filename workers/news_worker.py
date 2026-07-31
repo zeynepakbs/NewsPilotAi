@@ -1,14 +1,14 @@
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, Slot
 
+from services.news.ai.gemini_service import GeminiService
 from services.news.news_service import NewsService
-from services.news.ai.ai_service import AIService
-
 from services.news.ranking.duplicate_detector import DuplicateDetector
 from services.news.ranking.category_classifier import CategoryClassifier
+from services.news.ranking.headline_ranker import HeadlineRanker
 from services.news.ranking.importance_calculator import ImportanceCalculator
-
 from services.news.agenda.agenda_selector import AgendaSelector
 from services.news.sumarizer.plain_summary import build_plain_summary
+
 
 
 class NewsWorker(QObject):
@@ -17,140 +17,309 @@ class NewsWorker(QObject):
     error = Signal(str)
 
 
+
     def __init__(self):
+
         super().__init__()
 
+
         self.news_service = NewsService()
-        self.ai_service = AIService()
+        self.gemini_service = GeminiService()
 
         self.duplicate_detector = DuplicateDetector()
+
         self.category_classifier = CategoryClassifier()
+
+        self.headline_ranker = HeadlineRanker()
+
         self.importance_calculator = ImportanceCalculator()
+
 
         self.agenda_selector = AgendaSelector(
             max_per_region=2
         )
 
 
-    def _build_tier_lists(self, scored_clusters):
-        """
-        Önem puanına göre (AI'ya sormadan) kritik / az kritik
-        haber listelerini oluşturur. Metin, çevrilmiş description'dan
-        üretilir; ekstra Gemini isteği yapılmaz.
-        """
+
+    def _build_tier_lists(
+        self,
+        scored_clusters
+    ):
 
         kritik = []
-        az_kritik = []
+
 
         for cluster in scored_clusters:
 
-            tier = ImportanceCalculator.tier_for(cluster.score)
 
-            if tier is None:
+            tier = ImportanceCalculator.tier_for(
+                cluster.score
+            )
+
+
+            if tier != "kritik":
+
                 continue
+
+
 
             item = {
 
-                "category": getattr(cluster, "category", "") or "",
+                "category": getattr(
+                    cluster,
+                    "category",
+                    ""
+                ) or "",
 
-                "region": self._resolve_region(cluster),
+
+                "region": self._resolve_region(
+                    cluster
+                ),
+
 
                 "importance": cluster.score,
 
+
                 "repeat_count": cluster.repeat_count,
+
 
                 "sources": cluster.sources,
 
-                "body": build_plain_summary(cluster),
+
+                "body": build_plain_summary(
+                    cluster
+                ),
 
             }
 
-            if tier == "kritik":
-                kritik.append(item)
-            else:
-                az_kritik.append(item)
 
-        return kritik, az_kritik
+            kritik.append(
+                item
+            )
 
 
-    def _resolve_region(self, cluster):
+
+        return kritik
+
+
+
+
+    def _resolve_region(
+        self,
+        cluster
+    ):
 
         from collections import Counter
 
+
         regions = [
+
             article.region
+
             for article in cluster.articles
-            if getattr(article, "region", "")
+
+            if getattr(
+                article,
+                "region",
+                ""
+            )
+
         ]
 
+
         if not regions:
+
             return ""
 
-        return Counter(regions).most_common(1)[0][0]
+
+        return Counter(
+            regions
+        ).most_common(1)[0][0]
 
 
+
+    @Slot()
     def run(self):
 
         try:
 
-            # 1) Haberleri çek
-            articles = self.news_service.get_combined_news()
 
-
-            # 2) Çeviri
-            articles = self.ai_service.translate_articles(
-                articles
+            print(
+                "[NewsWorker] başladı"
             )
 
 
-            # 3) Benzer haberleri grupla (Article -> HeadlineCluster)
-            clusters = self.duplicate_detector.remove_duplicates(
-                articles
+
+            # 1 - Haberleri çek
+
+            articles = (
+                self.news_service
+                .get_combined_news()
             )
 
 
-            # 4) Kategorileri belirle (cluster.category)
-            clusters = self.category_classifier.classify(
-                clusters
+
+            print(
+                f"[NewsWorker] {len(articles)} haber geldi"
             )
 
 
-            # 5) AI analiz (cluster.importance_score, is_newsworthy, summary)
-            #    -- yalnızca en üstteki N cluster için, kota koruması var
-            analyzed_clusters = self.ai_service.analyze_clusters(
-                clusters
+
+            # 2 - Duplicate temizleme
+
+            print(
+                "[NewsWorker] duplicate başlıyor"
+            )
+
+            articles = (
+                self.gemini_service
+                .translate_articles(
+                    articles
+                )
+            )
+
+            print(
+                "[NewsWorker] çeviri tamamlandı"
+            )
+
+            clusters = (
+
+                self.duplicate_detector
+                .remove_duplicates(
+                    articles
+                )
+
             )
 
 
-            # 6) Önem puanı hesapla (senin formülüne göre, AI gerektirmez)
-            scored_clusters = self.importance_calculator.calculate(
-                analyzed_clusters
+
+            print(
+                f"[NewsWorker] {len(clusters)} cluster oluştu"
             )
 
 
-            # 7) Kritik gündemi seç (bölge bazlı, home page için)
-            agenda = self.agenda_selector.select(
-                scored_clusters
+
+            # 3 - Başlık tekrar sıralaması
+
+            print(
+                "[NewsWorker] headline ranking başlıyor"
             )
 
 
-            # 8) Kritik / az kritik listeleri (AI'sız, description'dan)
-            kritik, az_kritik = self._build_tier_lists(
-                scored_clusters
+            clusters = (
+
+                self.headline_ranker
+                .rank(
+                    clusters
+                )
+
             )
 
 
-            # 9) UI'a gönder
+            print(
+                "[NewsWorker] headline ranking tamamlandı"
+            )
+
+
+
+            # 4 - Kategori sınıflandırma
+
+            clusters = (
+
+                self.category_classifier
+                .classify(
+                    clusters
+                )
+
+            )
+
+
+            print(
+                "[NewsWorker] kategori tamamlandı"
+            )
+
+
+
+            # 5 - Algoritmik önem puanı
+
+            scored_clusters = (
+
+                self.importance_calculator
+                .calculate(
+                    clusters
+                )
+
+            )
+
+
+            print(
+                "[NewsWorker] önem hesaplandı"
+            )
+
+            top_clusters = scored_clusters[: min(len(scored_clusters), 20)]
+            ai_editor = self.gemini_service.edit_news(
+                top_clusters
+            )
+
+            print(
+                "[NewsWorker] Gemini edit tamamlandı"
+            )
+
+
+
+            # 6 - Gündem seçimi
+
+            agenda = (
+
+                self.agenda_selector
+                .select(
+                    scored_clusters
+                )
+
+            )
+
+
+
+            # 7 - Kritik haberler
+
+            kritik = (
+
+                self._build_tier_lists(
+                    scored_clusters
+                )
+
+            )
+
+
+
+            print(
+                "[NewsWorker] tamamlandı"
+            )
+
+
+
+            # 8 - UI gönder
+
             self.finished.emit(
+
                 {
                     "agenda": agenda,
                     "kritik": kritik,
-                    "az_kritik": az_kritik,
+                    "ai_editor": ai_editor,
                 }
+
             )
 
 
+
         except Exception as e:
+
+
+            print(
+                "[NewsWorker ERROR]",
+                e
+            )
+
 
             self.error.emit(
                 str(e)

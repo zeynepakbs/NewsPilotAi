@@ -9,7 +9,7 @@ service = NewsService()
 # Tüm bölgelerden haberleri topla
 articles = []
 
-for country in ["tr", "us", "eu", "asia"]:
+for country in ["tr", "us", "eu"]:
     try:
         news = service.get_news(country)
         print(f"{country.upper()} -> {len(news)} haber")

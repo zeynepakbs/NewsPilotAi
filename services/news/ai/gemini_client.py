@@ -61,7 +61,8 @@ class GeminiClient:
                     f"[GeminiClient] Dakikalık istek limiti doldu, "
                     f"{wait_time:.1f}s bekleniyor..."
                 )
-                time.sleep(wait_time)
+                #time.sleep(wait_time)
+                raise RuntimeError("Limit")
 
 
     @staticmethod
@@ -199,3 +200,4 @@ class GeminiClient:
             print(clean[:1000])
 
             raise
+        print("GEMINI KULLANILIYOR")

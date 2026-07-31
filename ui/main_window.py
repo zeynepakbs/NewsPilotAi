@@ -1,8 +1,7 @@
 from PySide6.QtWidgets import QMainWindow
 
 from ui.home_page import HomePage
-from ui.less_critical_news_page import CriticalNewsPage
-from ui.less_critical_news_page import LessCriticalNewsPage
+from ui.critical_page import CriticalNewsPage
 
 
 
@@ -56,10 +55,7 @@ class MainWindow(QMainWindow):
 
         self.clear_page()
 
-        self.home_page = HomePage(
-            on_show_critical=self.show_critical_page,
-            on_show_less_critical=self.show_less_critical_page,
-        )
+        self.home_page = HomePage()
 
         self.current_page = self.home_page
 
@@ -85,16 +81,3 @@ class MainWindow(QMainWindow):
 
 
 
-    def show_less_critical_page(self):
-
-        self.clear_page()
-
-        self.less_critical_page = LessCriticalNewsPage(
-            back_callback=self.show_home_page
-        )
-
-        self.current_page = self.less_critical_page
-
-        self.setCentralWidget(
-            self.less_critical_page
-        )
