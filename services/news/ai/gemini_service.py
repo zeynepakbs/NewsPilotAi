@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import Counter
 from dataclasses import replace
 from typing import Any, Dict, List
 
@@ -17,6 +18,7 @@ class GeminiService:
 
     def __init__(self):
         self.client = GeminiClient()
+        # translate ve edit işlemleri için ayrı cache alanları
         self.cache = {'translate': {}, 'edit': {}}
 
     @staticmethod
@@ -40,7 +42,6 @@ class GeminiService:
         ]
         if not regions:
             return 'Global'
-        from collections import Counter
         return Counter(regions).most_common(1)[0][0]
 
     def translate_articles(self, articles: List[Article]) -> List[Article]:
@@ -59,15 +60,20 @@ class GeminiService:
         for start in range(0, len(to_translate), self.TRANSLATE_CHUNK):
             chunk = to_translate[start:start + self.TRANSLATE_CHUNK]
             prompt = self._build_translate_prompt(chunk)
+            
             cache_key = self._hash_value(prompt)
             response = self.cache['translate'].get(cache_key)
+            
             if response is None:
                 response = self.client.ask(prompt)
                 self.cache['translate'][cache_key] = response
+                
             translations = self.client.parse_json(response)
+            
             if not isinstance(translations, list):
                 print('[GeminiService] Unexpected translate response format:', type(translations))
                 continue
+                
             for item in translations:
                 try:
                     index = int(item.get('index'))
@@ -87,6 +93,7 @@ class GeminiService:
         items = ''
         for idx, (_, article) in enumerate(chunk):
             items += f"\n{idx})\nTitle:\n{article.title}\n\nDescription:\n{self._truncate(article.description)}\n\n"
+        
         return (
             "You are a professional translator."
             "\nTranslate every news title and description into fluent English."
@@ -103,6 +110,61 @@ class GeminiService:
             "\nJSON format:\n[\n  {\n    \"index\": 0,\n    \"title\": \"...\",\n    \"description\": \"...\"\n  }\n]\n\n"
             f"News:{items}"
         )
+
+    def translate_clusters(self, clusters: List[HeadlineCluster]) -> List[HeadlineCluster]:
+        if not clusters:
+            return clusters
+
+        items = ""
+        for idx, cluster in enumerate(clusters):
+            # hasattr veya getattr ile güvenli erişim (opsiyonel ama daha güvenli)
+            summary_text = getattr(cluster, 'summary', '') 
+            items += (
+                f"\n{idx})\n"
+                f"Title:\n{cluster.title}\n\n"
+                f"Summary:\n{summary_text}\n\n"
+            )
+
+        prompt = (
+            "You are a professional translator.\n"
+            "Translate every news headline and summary into fluent English.\n"
+            "Preserve names, numbers and meaning.\n"
+            "Do not summarize.\n"
+            "Return ONLY valid JSON.\n\n"
+            "JSON format:\n"
+            "[\n"
+            "  {\n"
+            '    "index": 0,\n'
+            '    "title": "...",\n'
+            '    "summary": "..."\n'
+            "  }\n"
+            "]\n\n"
+            f"{items}"
+        )
+
+        cache_key = self._hash_value(prompt)
+        response = self.cache["translate"].get(cache_key)
+
+        if response is None:
+            response = self.client.ask(prompt)
+            self.cache["translate"][cache_key] = response
+
+        translations = self.client.parse_json(response)
+
+        if not isinstance(translations, list):
+            print("[GeminiService] Unexpected translate format")
+            return clusters
+
+        for item in translations:
+            try:
+                cluster = clusters[int(item["index"])]
+                cluster.title = item.get("title", cluster.title)
+                cluster.summary = item.get("summary", getattr(cluster, 'summary', ''))
+            except Exception as e:
+                print("[GeminiService]", e)
+
+        print(f"[GeminiService] Translated {len(clusters)} clusters")
+        return clusters
 
     def edit_news(self, clusters: List[HeadlineCluster]) -> List[Dict[str, Any]]:
         if not clusters:
@@ -123,13 +185,17 @@ class GeminiService:
         prompt = self._build_editor_prompt(stories)
         cache_key = self._hash_value(prompt)
         response = self.cache['edit'].get(cache_key)
+        
         if response is None:
             response = self.client.ask(prompt)
             self.cache['edit'][cache_key] = response
+            
         result = self.client.parse_json(response)
+        
         if not isinstance(result, list):
             print('[GeminiService] Unexpected edit response format:', type(result))
             return []
+            
         return result
 
     def _build_editor_prompt(self, stories: List[Dict[str, Any]]) -> str:
@@ -145,6 +211,7 @@ class GeminiService:
                 f"Repeat Count: {story['repeat_count']}\n"
                 f"Source Count: {story['source_count']}\n\n"
             )
+            
         return (
             "You are a professional news editor.\n"
             "For each story provided, analyze the headline and summary like an editor at a global news agency.\n"

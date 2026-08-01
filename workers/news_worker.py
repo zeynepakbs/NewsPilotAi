@@ -163,6 +163,14 @@ class NewsWorker(QObject):
                 f"[NewsWorker] {len(articles)} haber geldi"
             )
 
+            self.duplicate_detector.diagnose_threshold(articles)
+
+            self.duplicate_detector.inspect_clusters(
+            articles,
+            threshold=0.55,
+            min_size=3
+)
+
 
 
             # 2 - Duplicate temizleme
@@ -171,16 +179,10 @@ class NewsWorker(QObject):
                 "[NewsWorker] duplicate başlıyor"
             )
 
-            articles = (
-                self.gemini_service
-                .translate_articles(
-                    articles
-                )
-            )
+           
+            
 
-            print(
-                "[NewsWorker] çeviri tamamlandı"
-            )
+        
 
             clusters = (
 
@@ -256,14 +258,20 @@ class NewsWorker(QObject):
                 "[NewsWorker] önem hesaplandı"
             )
 
-            top_clusters = scored_clusters[: min(len(scored_clusters), 20)]
-            ai_editor = self.gemini_service.edit_news(
-                top_clusters
-            )
+            top_clusters = scored_clusters[:20]
 
-            print(
-                "[NewsWorker] Gemini edit tamamlandı"
-            )
+            top_clusters = self.gemini_service.translate_clusters(
+               top_clusters
+        )
+
+            print("[NewsWorker] Top cluster çevirisi tamamlandı")
+
+            ai_editor = self.gemini_service.edit_news(
+            top_clusters
+        )    
+
+            print("[NewsWorker] Gemini edit tamamlandı")
+           
 
 
 

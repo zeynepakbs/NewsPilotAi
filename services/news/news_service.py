@@ -1,12 +1,12 @@
 from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from services.news.collectors.asia_collector import AsiaCollector
 from services.news.collectors.europe_collector import EuropeCollector
 from services.news.collectors.turkey_collector import TurkeyCollector
 from services.news.collectors.us_collector import USCollector
-from services.news.collectors.asia_collector import AsiaCollector
 from services.news.models.article import Article
-from services.news.region_detector import RegionDetector
+from services.news.ingestion.content_filter import ContentFilter
 
 
 class NewsService:
@@ -16,9 +16,8 @@ class NewsService:
             "tr": TurkeyCollector(),
             "us": USCollector(),
             "eu": EuropeCollector(),
-            "as": AsiaCollector(),
+            "asia": AsiaCollector(),
         }
-        self.region_detector = RegionDetector()
 
     def get_news(self, country: str) -> List[Article]:
         collector = self.collectors.get(country.lower())
@@ -38,7 +37,7 @@ class NewsService:
         return self.get_news("eu")
 
     def get_asia_news(self):
-        return self.get_news("as")
+        return self.get_news("asia")
 
     def get_combined_news(self):
 
@@ -51,8 +50,7 @@ class NewsService:
                 news = collector.collect()
 
                 for article in news:
-                    article.region = self.region_detector.detect(region, article)
-                    article.lang = "tr" if region == "tr" else "en"
+                    article.region = region
 
                 return news
 
@@ -77,5 +75,19 @@ class NewsService:
                 articles.extend(
                     future.result()
                 )
+
+        before_count = len(articles)
+
+        # Kalıplaşmış/otomatik widget içeriklerini ve tam kopya
+        # başlıkları embedding hesaplamasından ÖNCE temizle.
+        articles = ContentFilter.filter_articles(articles)
+
+        filtered_count = before_count - len(articles)
+
+        if filtered_count > 0:
+            print(
+                f"[NewsService] {filtered_count} kalıplaşmış/kopya "
+                f"haber elendi ({before_count} -> {len(articles)})"
+            )
 
         return articles
