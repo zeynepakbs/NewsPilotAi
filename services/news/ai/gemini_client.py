@@ -201,3 +201,61 @@ class GeminiClient:
 
             raise
         print("GEMINI KULLANILIYOR")
+    def generate(self, prompt: str):
+
+        last_error = None
+
+        for attempt in range(self.MAX_RETRIES + 1):
+
+            self._wait_for_slot()
+
+            try:
+
+                response = self.client.models.generate_content(
+                    model="gemini-3.1-flash-lite",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.7,
+                        max_output_tokens=8192
+                    )
+                )
+
+                if not response.candidates:
+                    raise RuntimeError(
+                        "Gemini'den cevap alınamadı."
+                    )
+
+                text = response.text
+
+                if not text or not text.strip():
+                    raise RuntimeError(
+                        "Gemini boş cevap döndürdü."
+                    )
+
+                return text.strip()
+
+
+            except Exception as e:
+
+                last_error = e
+
+                if self._is_quota_error(e) and attempt < self.MAX_RETRIES:
+
+                    retry_delay = (
+                        self._extract_retry_delay(e)
+                        or (self.DEFAULT_RETRY_DELAY * (attempt + 1))
+                    )
+
+                    print(
+                        f"[GeminiClient] Kota hatası, "
+                        f"{retry_delay:.1f}s bekleniyor..."
+                    )
+
+                    time.sleep(retry_delay)
+
+                    continue
+
+                raise
+
+
+        raise last_error        

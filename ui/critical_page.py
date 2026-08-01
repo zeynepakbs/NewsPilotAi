@@ -1,3 +1,4 @@
+# ui/critical_page.py
 from PySide6.QtCore import Qt, QThread
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -17,7 +18,6 @@ class CriticalNewsPage(QWidget):
     RESULT_KEY = "kritik"
     PAGE_TITLE = "Kritik Haberler"
 
-
     def __init__(self, back_callback):
         super().__init__()
 
@@ -28,9 +28,7 @@ class CriticalNewsPage(QWidget):
         self.setup_ui()
         self.load_news()
 
-
     def setup_ui(self):
-
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
         layout.setSpacing(12)
@@ -64,11 +62,9 @@ class CriticalNewsPage(QWidget):
         self.loading_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.loading_label)
 
-
     def load_news(self):
-
         self.thread = QThread(self)
-        self.worker = NewsWorker()
+        self.worker = NewsWorker() # Parametresiz yeni yapı
         self.worker.moveToThread(self.thread)
 
         self.thread.started.connect(self.worker.run)
@@ -82,82 +78,58 @@ class CriticalNewsPage(QWidget):
 
         self.thread.start()
 
-
     def _clear_items(self):
-
         while self.items_layout.count():
-
             item = self.items_layout.takeAt(0)
-
             if item.widget():
                 item.widget().deleteLater()
 
-
     def show_news(self, result):
-
         self.loading_label.hide()
-
         self._clear_items()
 
         items = result.get(self.RESULT_KEY, [])
 
         if not items:
-
             empty = QLabel("Bu kategoride haber bulunamadı.")
             empty.setWordWrap(True)
             self.items_layout.addWidget(empty)
-
         else:
-
             for entry in items:
-
-                body_label = QLabel(entry.get("body", ""))
+                # Yeni worker veri yapısına uygun çekim işlemi
+                body_label = QLabel(entry.get("body", entry.get("summary", ""))) 
                 body_label.setWordWrap(True)
                 body_label.setContentsMargins(0, 0, 0, 4)
-
                 self.items_layout.addWidget(body_label)
 
                 meta_text = self._build_meta_text(entry)
-
                 if meta_text:
-
                     meta_label = QLabel(meta_text)
-                    meta_label.setStyleSheet(
-                        "color: #888888; font-size: 10px;"
-                    )
+                    meta_label.setStyleSheet("color: #888888; font-size: 10px;")
                     meta_label.setContentsMargins(0, 0, 0, 14)
-
                     self.items_layout.addWidget(meta_label)
 
         self.items_layout.addStretch()
 
-
     def _build_meta_text(self, entry):
-
         parts = []
-
         category = entry.get("category")
         if category:
             parts.append(category)
 
-        repeat_count = entry.get("repeat_count")
+        repeat_count = entry.get("repeat_count", entry.get("cluster_size"))
         if repeat_count:
             parts.append(f"{repeat_count} kaynak")
 
         return " · ".join(parts)
 
-
     def show_error(self, message):
-
         self.loading_label.hide()
-
         error = QLabel(f"Hata: {message}")
         error.setWordWrap(True)
         self.items_layout.addWidget(error)
 
-
     def closeEvent(self, event):
-
         try:
             if self.thread and self.thread.isRunning():
                 self.thread.quit()
