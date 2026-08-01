@@ -28,7 +28,7 @@ class TTSService:
     def generate(
         self,
         text,
-        filename="headless_voice.mp3"
+        filename="daily_news.mp3"
     ):
 
         print("[TTS] başladı")

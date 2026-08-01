@@ -1,0 +1,346 @@
+{
+    "date": "2026-08-02",
+    "script": "Good evening. I am your host, and while I may lack a head to nod along with the day's events, I assure you, I have an eye for the details that matter. Welcome to this briefing. Let us navigate the complexities of our world together.\n\nWe begin in Turkey, where the infrastructure of the future is taking shape. Parliament Speaker Numan Kurtulmuş has signaled a new era for the nation’s transit, following an announcement by the Minister of Transport and Infrastructure, Abdulkadir Uraloğlu. The government is aggressively expanding its high-speed rail network, with a clear objective: by 2028, a total of 27 provinces will be directly connected by high-speed lines. It is a bold ambition—one that might actually make \"being on time\" a standard rather than a suggestion.\n\nFrom the progress of transit to the peril of the peaks, we turn to Pakistan. A tragedy is unfolding on Broad Peak, where an avalanche has struck a group of 11 climbers. Among them is the world-renowned Nepali mountaineer and former British special forces member, Nirmal Purja. Rescue operations are underway; while four bodies have been recovered, the Alpine Club of Pakistan reports that aerial drone footage has spotted seven other climbers. Their exact condition and identities remain unverified at this time, and we await further updates on this developing rescue mission.\n\nIn the world of sports, the administrative landscape of global football is currently in turmoil. UEFA has officially declared a vote of no confidence in FIFA president Gianni Infantino. This follows a contentious proposal by Infantino to spin off the commercial rights of the World Cup and other major competitions into a semi-private entity. Although the FIFA chief has since abandoned the plan, the backlash has been severe enough to call his very presidency into question. It seems even in the beautiful game, the most dangerous fouls happen in the boardroom.\n\nShifting to regional diplomacy, Turkish Foreign Minister Hakan Fidan has held a telephone conversation with his Iranian counterpart, Abbas Araghchi. The two discussed the current status of ongoing negotiations. Minister Fidan emphasized that Turkey remains committed to working toward the cessation of regional conflicts and the establishment of a lasting peace.\n\nCloser to home, there is a significant development in local governance. The Ministry of Interior has announced that Sinem Dedetaş, the Mayor of Üsküdar, has been suspended from duty as a temporary measure while an investigation is conducted.\n\nThe migration crisis in Europe remains a focal point of international concern, particularly regarding the Spanish enclave of Ceuta. The situation has been fluid and, at times, chaotic. Reports indicate that approximately 69,500 irregular migrants who crossed into Ceuta have returned to Morocco. Tragically, the death toll associated with these crossings has risen to 67. In response to the massive influx—with tens of thousands crossing by sea—France and Italy have bolstered their border controls. Italian Prime Minister Giorgia Meloni has even announced a suspension of the Schengen free movement agreement between Spain and Italy. Human Rights Watch has noted that the return process for those who reached the enclave has been marred by confusion, leaving the exact figures of those involved difficult to verify.\n\nMeanwhile, the human cost of conflict continues to mount. In Gaza, the Ministry of Health reports that despite the existence of a ceasefire, 152 people have lost their lives in Israeli military attacks throughout the month of July. In a separate, sobering development, the internal toll of the war is also being felt within the Israeli military. A reserve soldier near Beersheba has taken his own life. According to the newspaper *Haaretz*, this marks the 17th suicide among Israeli soldiers this year, with reports suggesting a link between these incidents and the profound psychological trauma resulting from the ongoing war in Gaza.\n\nTurning to the conflict in Eastern Europe, the situation in Ukraine remains grim. Russian forces launched strikes on Kyiv and its suburbs early Saturday, resulting in 10 deaths. This escalation occurs as the United Nations reports that June was the deadliest month for civilians in Ukraine since April 2022. In a strategic counter-move, Ukrainian drones successfully sank a large Russian container ship in the Black Sea. With Ukraine facing a chronic shortage of air defenses capable of intercepting ballistic missiles, the capital remains under constant, high-stakes pressure.\n\nFinally, we return to a long-standing investigation in Tunceli. In the case of university student Gülistan Doku, who has been missing since January 5, 2020, authorities have made a move in their investigation. Of the five suspects currently in custody, two have been formally arrested, while the remaining two have been released under judicial control.\n\nThat concludes our report for this session. The world continues to turn, and I shall be here to witness it, whether I have a face to show for it or not. Thank you for joining me. Goodnight.",
+    "audio": "outputs\\daily_news.mp3",
+    "agenda": [
+        {
+            "title": "Parliament Speaker Kurtulmuş: With the law that will come into effect, we are opening the doors to a new era in Turkey wide open",
+            "summary": "",
+            "category": "Siyaset",
+            "region": "tr",
+            "importance": 33.35,
+            "repeat_count": 6,
+            "sources": [
+                "Habertürk",
+                "TRT Haber",
+                "Anadolu Ajansı",
+                "Milliyet",
+                "Sabah"
+            ]
+        },
+        {
+            "title": "Minister Fidan discussed the latest status of the negotiation process with Iranian Foreign Minister Araghchi",
+            "summary": "",
+            "category": "Siyaset",
+            "region": "tr",
+            "importance": 26.65,
+            "repeat_count": 4,
+            "sources": [
+                "TRT Haber",
+                "Milliyet",
+                "Anadolu Ajansı",
+                "Hürriyet"
+            ]
+        },
+        {
+            "title": "World-renowned climber Nirmal Purja among 11 struck by avalanche on Pakistan mountain",
+            "summary": "",
+            "category": "Teknoloji",
+            "region": "eu",
+            "importance": 30.0,
+            "repeat_count": 8,
+            "sources": [
+                "Channel News Asia",
+                "Euronews",
+                "DW",
+                "BBC",
+                "South China Morning Post",
+                "CBS News",
+                "The Guardian"
+            ]
+        },
+        {
+            "title": "European football body declares no confidence in FIFA's Infantino after World Cup sell-off plan",
+            "summary": "",
+            "category": "Afet",
+            "region": "eu",
+            "importance": 26.65,
+            "repeat_count": 4,
+            "sources": [
+                "DW",
+                "France 24",
+                "Euronews",
+                "The Japan Times"
+            ]
+        },
+        {
+            "title": "In Dropping Reflecting Pool Case, Pirro Draws Trump’s Wrath",
+            "summary": "",
+            "category": "Siyaset",
+            "region": "us",
+            "importance": 20.0,
+            "repeat_count": 3,
+            "sources": [
+                "South China Morning Post",
+                "Fox News",
+                "New York Times"
+            ]
+        },
+        {
+            "title": "Israel Says It Killed Several Hezbollah Members on Key Lebanon Hilltop",
+            "summary": "",
+            "category": "Dünya",
+            "region": "us",
+            "importance": 9.0,
+            "repeat_count": 2,
+            "sources": [
+                "South China Morning Post",
+                "New York Times"
+            ]
+        },
+        {
+            "title": "India's Modi forgives student protesters who abused him, says punishing them 'will not change situation'",
+            "summary": "",
+            "category": "Dünya",
+            "region": "asia",
+            "importance": 12.0,
+            "repeat_count": 3,
+            "sources": [
+                "DW",
+                "Channel News Asia",
+                "South China Morning Post"
+            ]
+        },
+        {
+            "title": "US embassies urge citizens to 'consider departing' Middle East",
+            "summary": "",
+            "category": "Dünya",
+            "region": "asia",
+            "importance": 11.01,
+            "repeat_count": 3,
+            "sources": [
+                "Channel News Asia",
+                "Times of India",
+                "South China Morning Post"
+            ]
+        }
+    ],
+    "kritik": [],
+    "ai_editor": [
+        {
+            "title": "Turkish Parliament Speaker Signals Legislative Overhaul",
+            "summary": "Speaker Numan Kurtulmuş has announced that upcoming legislative changes will usher in a new era for Turkey's political and legal landscape.",
+            "why_it_matters": "Signals potential structural reforms in Turkish governance and legal frameworks.",
+            "impact": "HIGH",
+            "tags": [
+                "Turkey",
+                "Politics",
+                "Legislation",
+                "Numan Kurtulmuş"
+            ]
+        },
+        {
+            "title": "Nirmal Purja Among 11 Caught in Pakistan Avalanche",
+            "summary": "Renowned mountaineer Nirmal Purja is reported to be among a group of 11 climbers struck by an avalanche in Pakistan.",
+            "why_it_matters": "Involves a high-profile figure in the global mountaineering community and highlights the dangers of high-altitude expeditions.",
+            "impact": "MEDIUM",
+            "tags": [
+                "Pakistan",
+                "Mountaineering",
+                "Nirmal Purja",
+                "Avalanche"
+            ]
+        },
+        {
+            "title": "UEFA Expresses No Confidence in FIFA Leadership Over World Cup Plans",
+            "summary": "European football governing bodies have formally declared a lack of confidence in FIFA President Gianni Infantino following controversial proposals regarding the World Cup.",
+            "why_it_matters": "Indicates a significant rift in global football governance that could impact the future of the World Cup.",
+            "impact": "HIGH",
+            "tags": [
+                "FIFA",
+                "UEFA",
+                "Football",
+                "Gianni Infantino"
+            ]
+        },
+        {
+            "title": "Turkish and Iranian Foreign Ministers Discuss Diplomatic Negotiations",
+            "summary": "Foreign Minister Hakan Fidan held talks with his Iranian counterpart, Abbas Araghchi, to review the current status of ongoing diplomatic negotiations.",
+            "why_it_matters": "Reflects critical regional diplomacy between two major powers in the Middle East.",
+            "impact": "MEDIUM",
+            "tags": [
+                "Turkey",
+                "Iran",
+                "Diplomacy",
+                "Hakan Fidan"
+            ]
+        },
+        {
+            "title": "Üsküdar Mayor Sinem Dedetaş Suspended from Office",
+            "summary": "Sinem Dedetaş, the Mayor of Üsküdar, has been officially suspended from her duties.",
+            "why_it_matters": "Represents a significant development in local Turkish municipal politics.",
+            "impact": "MEDIUM",
+            "tags": [
+                "Turkey",
+                "Politics",
+                "Üsküdar",
+                "Sinem Dedetaş"
+            ]
+        },
+        {
+            "title": "Migration Crisis: 69,500 Return to Morocco as Ceuta Death Toll Hits 67",
+            "summary": "Following a massive influx of migrants into the Spanish enclave of Ceuta, nearly 70,000 individuals have returned to Morocco, while the confirmed death toll has risen to 67.",
+            "why_it_matters": "Highlights the ongoing humanitarian and border security crisis at the EU-Africa border.",
+            "impact": "HIGH",
+            "tags": [
+                "Spain",
+                "Morocco",
+                "Migration",
+                "Ceuta"
+            ]
+        },
+        {
+            "title": "Gaza Health Ministry Reports 152 Deaths in July Despite Ceasefire",
+            "summary": "The Gaza Ministry of Health claims that 152 people were killed in Israeli military strikes throughout July, despite the existence of a ceasefire agreement.",
+            "why_it_matters": "Underscores the fragility of ceasefire agreements and the ongoing humanitarian toll in the conflict zone.",
+            "impact": "HIGH",
+            "tags": [
+                "Gaza",
+                "Israel",
+                "Conflict",
+                "Ceasefire"
+            ]
+        },
+        {
+            "title": "Casualties Reported in Kyiv Strikes as Ukraine Sinks Russian Vessel",
+            "summary": "At least nine people were killed in Russian strikes on Kyiv, while Ukrainian forces successfully sank a Russian container ship.",
+            "why_it_matters": "Marks a significant escalation in the ongoing Russia-Ukraine conflict.",
+            "impact": "HIGH",
+            "tags": [
+                "Ukraine",
+                "Russia",
+                "War",
+                "Kyiv"
+            ]
+        },
+        {
+            "title": "Two More Arrests Made in Gülistan Doku Disappearance Case",
+            "summary": "Authorities have arrested two additional suspects in connection with the long-running investigation into the disappearance of Gülistan Doku.",
+            "why_it_matters": "Provides a potential breakthrough in a high-profile missing persons case that has drawn significant public attention in Turkey.",
+            "impact": "MEDIUM",
+            "tags": [
+                "Turkey",
+                "Justice",
+                "Gülistan Doku"
+            ]
+        },
+        {
+            "title": "Minister Yumaklı Provides Update on Forest Fire Containment Efforts",
+            "summary": "Agriculture and Forestry Minister İbrahim Yumaklı has briefed the public on the latest status of ongoing forest fire suppression operations.",
+            "why_it_matters": "Forest fires pose a recurring and significant threat to Turkey's environment and infrastructure.",
+            "impact": "MEDIUM",
+            "tags": [
+                "Turkey",
+                "Environment",
+                "Forest Fires",
+                "İbrahim Yumaklı"
+            ]
+        },
+        {
+            "title": "Pirro Faces Trump’s Criticism Over Reflecting Pool Case",
+            "summary": "Jeanine Pirro has drawn the ire of Donald Trump following her handling of the Reflecting Pool legal case.",
+            "why_it_matters": "Highlights internal tensions within the political sphere surrounding the former president.",
+            "impact": "LOW",
+            "tags": [
+                "USA",
+                "Politics",
+                "Donald Trump",
+                "Jeanine Pirro"
+            ]
+        },
+        {
+            "title": "Firefighting Operations Continue Across Four Turkish Provinces",
+            "summary": "Emergency crews are actively battling forest fires in four separate provinces as containment efforts remain ongoing.",
+            "why_it_matters": "Reflects the continued strain on emergency services during the peak fire season.",
+            "impact": "MEDIUM",
+            "tags": [
+                "Turkey",
+                "Forest Fires",
+                "Emergency Response"
+            ]
+        },
+        {
+            "title": "Italy Suspends Schengen Agreement with Spain Amid Migration Surge",
+            "summary": "Italy has temporarily suspended the Schengen open-border arrangement with Spain following the arrival of 60,000 migrants in Ceuta.",
+            "why_it_matters": "Signals a potential breakdown in European border cooperation and the Schengen zone's integrity.",
+            "impact": "HIGH",
+            "tags": [
+                "Italy",
+                "Spain",
+                "Schengen",
+                "Migration"
+            ]
+        },
+        {
+            "title": "Tourist Plane Crashes Over Peru’s Nazca Lines, 13 Dead",
+            "summary": "A sightseeing aircraft crashed while flying over the Nazca Lines in Peru, resulting in the deaths of all 13 people on board.",
+            "why_it_matters": "A major aviation tragedy involving international tourists at a world-renowned heritage site.",
+            "impact": "MEDIUM",
+            "tags": [
+                "Peru",
+                "Aviation",
+                "Nazca Lines",
+                "Accident"
+            ]
+        },
+        {
+            "title": "Spain Deploys Floating Barrier at Ceuta Border",
+            "summary": "In response to the recent surge in irregular migration, Spanish authorities have installed a floating barrier off the coast of Ceuta.",
+            "why_it_matters": "Demonstrates the hardening of border policies in response to migration pressures.",
+            "impact": "MEDIUM",
+            "tags": [
+                "Spain",
+                "Ceuta",
+                "Migration",
+                "Border Security"
+            ]
+        },
+        {
+            "title": "Government Addresses Attempted Assassination of President Erdoğan",
+            "summary": "Turkish officials have issued statements regarding the individual linked to FETO who attempted to assassinate President Recep Tayyip Erdoğan.",
+            "why_it_matters": "Concerns national security and the ongoing crackdown on the FETO organization.",
+            "impact": "HIGH",
+            "tags": [
+                "Turkey",
+                "Politics",
+                "Erdoğan",
+                "FETO"
+            ]
+        },
+        {
+            "title": "Gaza Health Ministry: Israel Targets Medical Warehouses",
+            "summary": "The Gaza Ministry of Health reports that Israeli forces have destroyed two of four targeted medicine warehouses in the region.",
+            "why_it_matters": "Raises serious concerns regarding the humanitarian situation and the availability of medical supplies in Gaza.",
+            "impact": "HIGH",
+            "tags": [
+                "Gaza",
+                "Israel",
+                "Humanitarian",
+                "Healthcare"
+            ]
+        },
+        {
+            "title": "3.4 Magnitude Earthquake Strikes Kırşehir",
+            "summary": "A minor earthquake measuring 3.4 on the Richter scale was recorded in the Kırşehir province of Turkey.",
+            "why_it_matters": "While minor, it serves as a reminder of the seismic activity in the region.",
+            "impact": "LOW",
+            "tags": [
+                "Turkey",
+                "Earthquake",
+                "Kırşehir"
+            ]
+        },
+        {
+            "title": "Trump Pushes $1.8bn Fund as Senate Reconsiders AG Nomination",
+            "summary": "Donald Trump is advocating for a $1.8 billion slush fund as the Senate committee prepares to revisit the nomination of the Attorney General.",
+            "why_it_matters": "Highlights ongoing political maneuvering in the U.S. Senate regarding executive appointments.",
+            "impact": "MEDIUM",
+            "tags": [
+                "USA",
+                "Politics",
+                "Trump",
+                "Senate"
+            ]
+        }
+    ]
+}
