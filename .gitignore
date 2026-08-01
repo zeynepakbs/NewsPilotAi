@@ -16,3 +16,11 @@ config.py
 
 # Logs
 *.log
+
+# FFmpeg binaries
+tools/ffmpeg/*.exe
+
+# Generated files
+outputs/*.mp3
+assets/videos/output/*
+cache/*.json
