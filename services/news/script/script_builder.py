@@ -1,6 +1,5 @@
 from services.news.script.presenter_persona import PresenterPersona
 
-
 class ScriptBuilder:
 
     TARGET_DURATION_MINUTES = 8
@@ -42,20 +41,21 @@ Below is today's ranked news.
 
 TASK
 
-Write a complete television news broadcast script.
+Write a complete news podcast script.
 
 Requirements:
 
-- Speak ONLY in English.
-- Begin with a short welcome.
+- Speak ONLY in natural English.
+- Write 1000–1200 words (approximately {self.TARGET_DURATION_MINUTES} minutes).
+- Sound like a charismatic podcast host rather than a formal TV anchor.
+- Address the audience naturally (e.g., "Welcome back everyone", "Let's jump into our first story").
 - Present the stories from highest importance to lowest.
-- Create smooth transitions.
-- Never invent facts.
-- Use only the supplied information.
-- Avoid repeating information.
-- Sound natural and conversational.
-- Include occasional subtle humor.
-- End with a professional closing.
-- The script should be approximately {self.TARGET_DURATION_MINUTES} minutes long.
-- Return ONLY the final script.
+- Use smooth transitions such as "Meanwhile...", "On a different note...", "Speaking of...", "Here's something interesting...".
+- Use light reactions like "(smiles)" or "(laughs softly)" only when appropriate.
+- NEVER joke about deaths, disasters, wars, crimes or other sensitive topics.
+- Keep the information accurate and use only the supplied stories. Never invent facts.
+- Avoid repeating facts.
+- Use short spoken sentences suitable for automatic English subtitles.
+- Finish with a warm closing inviting viewers back tomorrow.
+- Return ONLY the final script (no Markdown, no JSON, no notes).
 """

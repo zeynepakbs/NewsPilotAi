@@ -16,6 +16,10 @@ from services.news.voice.tts_service import TTSService
 from cache.agenda_cache import AgendaCache
 from services.news.filter.noise_filter import NewsNoiseFilter
 
+# Video servisleri eklendi
+from services.video.template_generator import TemplateGenerator
+from services.video.audio_mixer import AudioMixer
+
 
 class NewsWorker(QObject):
 
@@ -36,6 +40,10 @@ class NewsWorker(QObject):
         self.headline_ranker = HeadlineRanker()
         self.importance_calculator = ImportanceCalculator()
         self.agenda_selector = AgendaSelector(max_per_region=2)
+
+        # Video Sınıfları
+        self.template_generator = TemplateGenerator()
+        self.audio_mixer = AudioMixer()
 
     def _build_tier_lists(self, scored_clusters):
         kritik = []
@@ -147,10 +155,16 @@ class NewsWorker(QObject):
                 print("[NewsWorker] Bugünün gündemi cache'den alınıyor")
                 data = self.cache.load()
                 audio_path = data.get("audio")
-                if audio_path and Path(audio_path).exists():
+                video_path = data.get("video")
+
+                if (
+                    audio_path and Path(audio_path).exists()
+                    and video_path and Path(video_path).exists()
+                ):
                     self.finished.emit(data)
                     return
-                print("[NewsWorker] Cache bulundu ancak ses dosyası eksik, yeniden oluşturuluyor")
+
+                print("[NewsWorker] Cache bulundu ancak dosyalar eksik, yeniden oluşturuluyor")
 
             # 1 - Haberleri çek
             articles = self.news_service.get_combined_news()
@@ -215,12 +229,14 @@ class NewsWorker(QObject):
             # 8 - TTS (Seslendirme)
             print("[NewsWorker] TTS başlıyor")
             audio_path = None
+            subtitle_path = None
             try:
-                audio_path = self.tts_service.generate(
+                audio_path, subtitle_path = self.tts_service.generate(
                     script,
                     filename="daily_news.mp3"
                 )
                 print("[NewsWorker] Audio:", audio_path)
+                print("[NewsWorker] Subtitle:", subtitle_path)
             except Exception as e:
                 print("[NewsWorker] TTS HATA:", e)
                 self.error.emit("Ses üretimi sırasında hata oluştu")
@@ -231,10 +247,22 @@ class NewsWorker(QObject):
                 self.error.emit("Ses üretimi sırasında hata oluştu")
                 return
 
-            # 9 - Gündem seçimi
+            # 9 - Video (şablon üzerine ses bindirme / efekt)
+            print("[NewsWorker] Video işleniyor... (Bu işlem biraz sürebilir)")
+            video_path = None
+            try:
+                self.template_generator.create()
+                video_path = self.audio_mixer.create_video(audio_path)
+                print(f"[NewsWorker] Video hazır: {video_path}")
+            except Exception as e:
+                print(f"[NewsWorker] Video işleme HATA: {e}")
+                self.error.emit("Video işleme başarısız oldu")
+                return
+
+            # 10 - Gündem seçimi
             agenda = self.agenda_selector.select(scored_clusters)
 
-            # 10 - Kritik haberler
+            # 11 - Kritik haberler
             kritik = self._build_tier_lists(scored_clusters)
 
             print("[NewsWorker] tamamlandı")
@@ -245,9 +273,12 @@ class NewsWorker(QObject):
                 audio_path,
                 agenda,
                 kritik,
-                ai_editor
+                ai_editor,
+                video=video_path,
+                subtitle=subtitle_path
             )
 
+            # Artık sesi, videoyu ve altyazıyı UI'a dictionary olarak fırlatıyoruz
             self.finished.emit(
                 {
                     "agenda": agenda,
@@ -255,6 +286,8 @@ class NewsWorker(QObject):
                     "ai_editor": ai_editor,
                     "script": script,
                     "audio": audio_path,
+                    "subtitle": subtitle_path,
+                    "video": video_path,
                 }
             )
 

@@ -225,3 +225,61 @@ class GeminiService:
             "- tags: a list of relevant keywords\n\n"
             f"Input stories:{items}"
         )
+
+    def generate_daily_news_script(
+        self,
+        stories: List[Dict[str, Any]],
+        duration_minutes: int = 8
+    ) -> str:
+        """
+        Düzenlenmiş haberlerden düz metin formatında (JSON olmayan) 
+        bir haber programı senaryosu üretir.
+        """
+        if not stories:
+            return ""
+
+        print(f"[GeminiService] Generating {duration_minutes}-minute daily news script...")
+        
+        prompt = self._build_script_prompt(stories, duration_minutes)
+        
+        # Sadece senaryo (düz metin) döneceği için parse_json kullanmıyoruz.
+        response = self.client.ask(prompt)
+        
+        return response
+
+    def _build_script_prompt(
+        self,
+        stories: List[Dict[str, Any]],
+        duration_minutes: int
+    ) -> str:
+        """
+        Senaryo üretimi için LLM promptunu hazırlar.
+        """
+        items = ""
+        for idx, story in enumerate(stories):
+            # edit_news'ten dönen formata göre verileri alıyoruz
+            title = story.get('title', '')
+            summary = story.get('summary', '')
+            why = story.get('why_it_matters', '')
+            impact = story.get('impact', '')
+            
+            items += (
+                f"\nStory {idx + 1}:\n"
+                f"Headline: {title}\n"
+                f"Summary: {summary}\n"
+                f"Why it matters: {why}\n"
+                f"Impact Level: {impact}\n"
+            )
+
+        return (
+            f"You are a professional, engaging news anchor hosting a daily news podcast.\n"
+            f"Your task is to write a script for a {duration_minutes}-minute daily news show.\n\n"
+            "Rules:\n"
+            "- Write in a conversational, spoken-word style (radio/podcast tone).\n"
+            "- Include an engaging intro welcoming the listeners.\n"
+            "- Use smooth, natural transitions between stories.\n"
+            "- Conclude with a warm outro.\n"
+            "- DO NOT return JSON. Return ONLY the plain text script.\n"
+            "- Base your script ONLY on the following stories:\n\n"
+            f"{items}"
+        )

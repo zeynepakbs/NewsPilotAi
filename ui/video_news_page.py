@@ -39,8 +39,10 @@ class VideoNewsPage(QWidget):
 
     def on_finished(self, result):
         audio_path = result.get("audio")
+        subtitle_path = result.get("subtitle")
         if audio_path:
-            self.video_player_widget.set_audio(audio_path)
+            self.video_player_widget.set_audio(audio_path, subtitle_path)
+        
 
     def on_error(self, message):
         print("NewsWorker error:", message)

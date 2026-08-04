@@ -1,16 +1,96 @@
+import re
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QEvent, QUrl, QTimer
+from PySide6.QtCore import Qt, QEvent, QUrl, QTimer, QRectF, QSizeF
+from PySide6.QtGui import QColor, QFont, QPainter, QTextOption
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QStackedLayout,
+    QGraphicsView,
+    QGraphicsScene,
+    QGraphicsTextItem,
+    QGraphicsRectItem,
+    QFrame,
 )
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PySide6.QtMultimediaWidgets import QVideoWidget
+from PySide6.QtMultimediaWidgets import QGraphicsVideoItem
 
 from widgets.AvatarWidget import AvatarWidget
 from widgets.PlayerControls import PlayerControls
+
+
+def _vtt_time_to_ms(time_str: str) -> int:
+    # "00:00:01.234" veya "00:00:01,234" -> milisaniye
+    normalized = time_str.replace(",", ".")
+    h, m, rest = normalized.split(":")
+    s, ms = rest.split(".")
+    return (int(h) * 3600 + int(m) * 60 + int(s)) * 1000 + int(ms)
+
+
+_TIME_LINE_PATTERN = re.compile(
+    r"^(\d{2}:\d{2}:\d{2}[\.,]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[\.,]\d{3})"
+)
+_INDEX_LINE_PATTERN = re.compile(r"^\d+$")
+
+
+def parse_vtt(vtt_path: str):
+    """
+    Satır bazlı, boş satır olsun olmasın çalışan basit bir WebVTT parser.
+    Dönüş: [(start_ms, end_ms, text), ...]
+    """
+    cues = []
+    try:
+        content = Path(vtt_path).read_text(encoding="utf-8")
+    except Exception:
+        return cues
+
+    lines = content.splitlines()
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i].strip()
+        if not line or line.upper().startswith("WEBVTT") or _INDEX_LINE_PATTERN.match(line):
+            i += 1
+            continue
+
+        match = _TIME_LINE_PATTERN.match(line)
+        if match:
+            start_ms = _vtt_time_to_ms(match.group(1))
+            end_ms = _vtt_time_to_ms(match.group(2))
+            i += 1
+
+            text_lines = []
+            while i < n:
+                next_line = lines[i].strip()
+                if not next_line:
+                    i += 1
+                    break
+                if _TIME_LINE_PATTERN.match(next_line) or _INDEX_LINE_PATTERN.match(next_line):
+                    break
+                text_lines.append(next_line)
+                i += 1
+
+            text = " ".join(text_lines).strip()
+            if text:
+                cues.append((start_ms, end_ms, text))
+        else:
+            i += 1
+
+    if not cues:
+        return cues
+
+    merged_cues = [cues[0]]
+    for start_ms, end_ms, text in cues[1:]:
+        last_start, last_end, last_text = merged_cues[-1]
+        gap = start_ms - last_end
+        if gap <= 250:
+            merged_cues[-1] = (last_start, end_ms, f"{last_text} {text}".strip())
+        else:
+            merged_cues.append((start_ms, end_ms, text))
+
+    return merged_cues
 
 
 class VideoNewsPlayer(QWidget):
@@ -19,9 +99,13 @@ class VideoNewsPlayer(QWidget):
         super().__init__(parent)
 
         self.audio_file = None
+        self.subtitle_cues = []
+
         self.video_player = QMediaPlayer(self)
-        self.video_widget = QVideoWidget(self)
-        self.video_player.setVideoOutput(self.video_widget)
+        self.scene = QGraphicsScene(self)
+        self.video_item = QGraphicsVideoItem()
+        self.scene.addItem(self.video_item)
+        self.video_player.setVideoOutput(self.video_item)
 
         self.audio_player = QMediaPlayer(self)
         self.audio_output = QAudioOutput(self)
@@ -37,6 +121,7 @@ class VideoNewsPlayer(QWidget):
 
         self.video_player.mediaStatusChanged.connect(self.on_video_status_changed)
         self.audio_player.mediaStatusChanged.connect(self.on_audio_status_changed)
+        self.audio_player.positionChanged.connect(self.on_audio_position_changed)
 
         # create a single-shot timer for hiding controls on inactivity
         self.start_controls_timer = QTimer(self)
@@ -80,6 +165,15 @@ class VideoNewsPlayer(QWidget):
             QPushButton#playerControlButton:hover {
                 background-color: rgba(255, 255, 255, 0.26);
             }
+
+            QLabel#subtitleLabel {
+                color: white;
+                font-size: 18px;
+                font-weight: 600;
+                background-color: rgba(0, 0, 0, 0.55);
+                border-radius: 8px;
+                padding: 6px 14px;
+            }
             """
         )
 
@@ -90,13 +184,18 @@ class VideoNewsPlayer(QWidget):
         video_frame = QWidget(self)
         video_frame.setObjectName("videoFrame")
         video_frame.setMouseTracking(True)
-        self.video_widget.setMouseTracking(True)
+
+        self.view = QGraphicsView(self.scene, video_frame)
+        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.view.setFrameShape(QFrame.NoFrame)
+        self.view.setRenderHints(self.view.renderHints() | QPainter.Antialiasing)
 
         video_layout = QStackedLayout(video_frame)
         video_layout.setStackingMode(QStackedLayout.StackAll)
         video_layout.setContentsMargins(0, 0, 0, 0)
         video_layout.setSpacing(0)
-        video_layout.addWidget(self.video_widget)
+        video_layout.addWidget(self.view)
 
         avatar = AvatarWidget(self)
         avatar.setFixedSize(300, 320)
@@ -112,19 +211,44 @@ class VideoNewsPlayer(QWidget):
         avatar_container.setContentsMargins(0, 0, 0, 0)
         video_layout.addWidget(avatar_container)
 
-        self.controls.setParent(self)
+        overlay = QWidget(video_frame)
+        overlay.setAttribute(Qt.WA_TransparentForMouseEvents)
+        overlay.setAttribute(Qt.WA_StyledBackground)
+        overlay.setStyleSheet("background: transparent;")
+        video_layout.addWidget(overlay)
+
+        self.subtitle_item = QGraphicsTextItem("")
+        self.subtitle_item.setDefaultTextColor(Qt.white)
+        self.subtitle_item.setFont(QFont("Arial", 16, QFont.DemiBold))
+        self.subtitle_item.document().setDefaultTextOption(QTextOption(Qt.AlignCenter))
+        self.subtitle_item.setZValue(2)
+        self.subtitle_item.setTextWidth(0)
+        self.subtitle_item.setVisible(False)
+        self.scene.addItem(self.subtitle_item)
+
+        self.subtitle_bg = QGraphicsRectItem()
+        self.subtitle_bg.setBrush(QColor(0, 0, 0, 160))
+        self.subtitle_bg.setPen(Qt.NoPen)
+        self.subtitle_bg.setZValue(1)
+        self.subtitle_bg.setVisible(False)
+        self.scene.addItem(self.subtitle_bg)
+
+        self.controls.setParent(overlay)
         self.controls.adjustSize()
         self._position_controls()
         self.controls.show()
         self.controls.raise_()
 
         # keep references for event handling
+        self.overlay = overlay
+
+        # keep references for event handling
         self.video_frame = video_frame
         self.avatar_container = avatar_container
 
         video_frame.installEventFilter(self)
-        self.video_widget.installEventFilter(self)
         self.controls.installEventFilter(self)
+        overlay.installEventFilter(self)
         avatar_container.installEventFilter(self)
 
         layout.addWidget(video_frame, stretch=1)
@@ -138,21 +262,63 @@ class VideoNewsPlayer(QWidget):
     def _position_controls(self):
         self.controls.adjustSize()
         if hasattr(self, "video_frame"):
-            frame_geom = self.video_frame.geometry()
-            x = frame_geom.x() + 20
-            y = frame_geom.y() + frame_geom.height() - self.controls.height() - 20
+            frame_height = self.video_frame.height()
+            frame_width = self.video_frame.width()
+            x = 20
+            y = frame_height - self.controls.height() - 20
         else:
             x = 20
             y = self.height() - self.controls.height() - 20
         self.controls.move(x, max(0, y))
         self.controls.raise_()
 
-    def set_audio(self, audio_path):
+        if hasattr(self, "subtitle_item") and hasattr(self, "video_frame"):
+            frame_height = self.video_frame.height()
+            frame_width = self.video_frame.width()
+            text_width = min(900, max(180, frame_width - 80))
+            self.subtitle_item.setTextWidth(text_width)
+            rect = self.subtitle_item.boundingRect()
+            sx = (frame_width - rect.width()) / 2
+            sy = frame_height - self.controls.height() - rect.height() - 28
+            self.subtitle_item.setPos(sx, max(0, sy))
+            self.subtitle_bg.setRect(rect.adjusted(-14, -10, 14, 10))
+            self.subtitle_bg.setPos(self.subtitle_item.pos())
+
+    def set_audio(self, audio_path, subtitle_path=None):
         self.audio_file = str(Path(audio_path).resolve())
         self.audio_player.setSource(QUrl.fromLocalFile(self.audio_file))
         self.audio_player.play()
         self.video_player.play()
+
+        self.subtitle_cues = []
+        self.subtitle_item.setPlainText("")
+        self.subtitle_item.setVisible(False)
+        self.subtitle_bg.setVisible(False)
+
+        if subtitle_path and Path(subtitle_path).exists():
+            self.subtitle_cues = parse_vtt(str(subtitle_path))
+            if self.subtitle_cues:
+                self.subtitle_item.setVisible(True)
+                self.subtitle_bg.setVisible(True)
+
         self.show_controls()
+
+    def on_audio_position_changed(self, position_ms):
+        if not self.subtitle_cues:
+            return
+
+        current_text = ""
+        for start_ms, end_ms, text in self.subtitle_cues:
+            if start_ms <= position_ms <= end_ms:
+                current_text = text
+                break
+
+        if self.subtitle_item.toPlainText() != current_text:
+            print(f"[SUBTITLE] position_ms={position_ms} text={current_text}")
+            self.subtitle_item.setPlainText(current_text)
+            self.subtitle_item.setVisible(bool(current_text))
+            self.subtitle_bg.setVisible(bool(current_text))
+            self._position_controls()
 
     def play_media(self):
         # play audio (if any); always keep video playing
@@ -208,10 +374,22 @@ class VideoNewsPlayer(QWidget):
 
     def resizeEvent(self, event):
         self._position_controls()
+        if hasattr(self, "view") and hasattr(self, "video_frame"):
+            self.view.resize(self.video_frame.size())
+            self.view.setSceneRect(QRectF(0, 0, self.video_frame.width(), self.video_frame.height()))
+            self.video_item.setSize(QSizeF(self.video_frame.width(), self.video_frame.height()))
+        if hasattr(self, "overlay") and hasattr(self, "video_frame"):
+            self.overlay.resize(self.video_frame.size())
         super().resizeEvent(event)
 
     def showEvent(self, event):
         self._position_controls()
+        if hasattr(self, "view") and hasattr(self, "video_frame"):
+            self.view.resize(self.video_frame.size())
+            self.view.setSceneRect(QRectF(0, 0, self.video_frame.width(), self.video_frame.height()))
+            self.video_item.setSize(QSizeF(self.video_frame.width(), self.video_frame.height()))
+        if hasattr(self, "overlay") and hasattr(self, "video_frame"):
+            self.overlay.resize(self.video_frame.size())
         super().showEvent(event)
 
     def keyPressEvent(self, event):
