@@ -1,58 +1,62 @@
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QSlider
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QStyle
 
 
 class PlayerControls(QWidget):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAttribute(Qt.WA_StyledBackground)
         self.setObjectName("playerControlsOverlay")
 
-        # Butonlar
-        self.play_button = QPushButton("▶")
-        self.play_button.setFixedSize(QSize(45, 45))
-        self.play_button.setCursor(Qt.PointingHandCursor)
-        self.play_button.setObjectName("playerControlButton")
+        self.download_button = QPushButton("Download")
+        self.download_button.setFixedSize(QSize(95, 36))
+        self.download_button.setCursor(Qt.PointingHandCursor)
+        self.download_button.setObjectName("playerControlButton")
 
-        self.volume_slider = QSlider(Qt.Horizontal, self)
-        self.volume_slider.setRange(0, 100)
-        self.volume_slider.setValue(80)
-        self.volume_slider.setFixedWidth(100)
-        self.volume_slider.setCursor(Qt.PointingHandCursor)
+        # Unicode ok karakteri ("⬇") yerine Qt'nin kendi standart ikonunu
+        # kullanıyoruz. Bu, font/karakter setine bağımlı olmadığı için
+        # platform bağımsız ve her zaman görünür bir ikon sağlar.
+        self.download_button.setIcon(
+            self.style().standardIcon(QStyle.SP_ArrowDown)
+        )
+        self.download_button.setIconSize(QSize(13, 13))
 
-        self.fullscreen_button = QPushButton("⛶")
-        self.fullscreen_button.setFixedSize(QSize(45, 45))
-        self.fullscreen_button.setCursor(Qt.PointingHandCursor)
-        self.fullscreen_button.setObjectName("playerControlButton")
+        # Başlangıçta pasif kalsın ama CSS ile görünürlüğünü ayarlayacağız
+        self.download_button.setEnabled(False)
 
-        # Yerleşim
         layout = QHBoxLayout(self)
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(10)
-        layout.addWidget(self.play_button)
-        layout.addWidget(self.volume_slider)
         layout.addStretch()
-        layout.addWidget(self.fullscreen_button)
+        layout.addWidget(self.download_button)
 
-        self.setFixedHeight(65)
+        self.setFixedHeight(50)
 
-        # Stil Tanımlamaları
         self.setStyleSheet(
             """
             QWidget#playerControlsOverlay {
-                background-color: rgba(0, 0, 0, 0.6);
-                border-radius: 12px;
+                background-color: transparent;
             }
+
             QPushButton#playerControlButton {
-                background-color: rgba(255, 255, 255, 0.15);
+                background-color: rgba(0, 0, 0, 0.72);
                 color: white;
                 border: none;
                 border-radius: 8px;
-                font-size: 16px;
+                font-size: 12px;
             }
+
             QPushButton#playerControlButton:hover {
-                background-color: rgba(255, 255, 255, 0.3);
+                background-color: rgba(0, 0, 0, 0.9);
+            }
+
+            /* PASİF DURUM: buton tıklanamazken de görünür kalsın diye
+               opaklığı öncekine göre artırdık (0.3 -> 0.55, 0.4 -> 0.75).
+               Koyu video arka planında neredeyse görünmez olma sorunu
+               buradan kaynaklanıyordu. */
+            QPushButton#playerControlButton:disabled {
+                background-color: rgba(0, 0, 0, 0.55);
+                color: rgba(255, 255, 255, 0.75);
             }
             """
         )

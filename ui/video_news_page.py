@@ -22,6 +22,10 @@ class VideoNewsPage(QWidget):
         self.start_worker()
 
     def start_worker(self):
+        if self.thread and self.thread.isRunning():
+            self.thread.quit()
+            self.thread.wait(3000)
+
         self.thread = QThread(self)
         self.worker = NewsWorker()
         self.worker.moveToThread(self.thread)
@@ -40,8 +44,11 @@ class VideoNewsPage(QWidget):
     def on_finished(self, result):
         audio_path = result.get("audio")
         subtitle_path = result.get("subtitle")
+        video_path = result.get("video")
         if audio_path:
             self.video_player_widget.set_audio(audio_path, subtitle_path)
+        if video_path:
+            self.video_player_widget.set_current_video_path(video_path)
         
 
     def on_error(self, message):
