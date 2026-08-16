@@ -15,14 +15,6 @@ class AudioMixer:
             / "ffmpeg.exe"
         )
 
-        self.template = (
-            self.root
-            / "assets"
-            / "videos"
-            / "template"
-            / "presenter_template.mp4"
-        )
-
         self.output = (
             self.root
             / "assets"
@@ -36,17 +28,18 @@ class AudioMixer:
             exist_ok=True
         )
 
-
     def create_video(
         self,
-        audio_file: str
+        video_file: str,
+        audio_file: str,
     ):
 
+        video = Path(video_file)
         audio = Path(audio_file)
 
-        if not self.template.exists():
+        if not video.exists():
             raise FileNotFoundError(
-                "Template video bulunamadı"
+                f"Scrolling video bulunamadı: {video}"
             )
 
         if not audio.exists():
@@ -54,66 +47,53 @@ class AudioMixer:
                 f"Ses bulunamadı: {audio}"
             )
 
-
         if self.output.exists():
             self.output.unlink()
 
-
         command = [
 
-    str(self.ffmpeg),
+            str(self.ffmpeg),
 
-    # Template videoyu döngüye al
-    "-stream_loop",
-    "-1",
+            "-y",
 
-    "-i",
-    str(self.template),
+            "-i",
+            str(video),
 
-    # Haber sesi
-    "-i",
-    str(audio),
+            "-i",
+            str(audio),
 
+            "-map",
+            "0:v:0",
 
-    # Video ve ses seçimi
+            "-map",
+            "1:a:0",
 
-    "-map",
-    "0:v:0",
+            "-c:v",
+            "libx264",
 
-    "-map",
-    "1:a:0",
+            "-preset",
+            "fast",
 
+            "-c:a",
+            "aac",
 
-    # Video tekrar kodlanacak
+            "-b:a",
+            "192k",
 
-    "-c:v",
-    "libx264",
+            "-shortest",
 
-    "-preset",
-    "fast",
+            str(self.output),
 
+        ]
 
-    # Ses
-
-    "-c:a",
-    "aac",
-
-    "-b:a",
-    "192k",
-
-
-    # Ses uzunluğu kadar kes
-
-    "-shortest",
-
-
-    str(self.output)
-
-]
         subprocess.run(
             command,
-            check=True
+            check=True,
+            creationflags=(
+                subprocess.CREATE_NO_WINDOW
+                if hasattr(subprocess, "CREATE_NO_WINDOW")
+                else 0
+            ),
         )
-
 
         return str(self.output)

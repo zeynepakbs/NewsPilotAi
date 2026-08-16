@@ -2,6 +2,8 @@ from pathlib import Path
 import subprocess
 
 
+# DEPRECATED: Eski presenter/zoompan pipeline. Aktif akış
+# services/video/scrolling_text_generator.py kullanır.
 class TemplateGenerator:
 
     def __init__(self):

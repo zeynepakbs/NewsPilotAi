@@ -1,4 +1,4 @@
-﻿from PySide6.QtCore import QThread
+﻿from PySide6.QtCore import QThread, Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from widgets.VideoNewsPlayer import VideoNewsPlayer
@@ -14,7 +14,13 @@ class VideoNewsPage(QWidget):
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # Video oynatıcının tüm pencereyi tam olarak kaplamasını sağlıyoruz
         layout.addWidget(self.video_player_widget)
+
+        # Sayfanın arka planını koyu stüdyo temasına sabitliyoruz
+        self.setStyleSheet("background-color: #0b0f19;")
 
         self.thread = None
         self.worker = None
@@ -42,14 +48,9 @@ class VideoNewsPage(QWidget):
         self.thread.start()
 
     def on_finished(self, result):
-        audio_path = result.get("audio")
-        subtitle_path = result.get("subtitle")
         video_path = result.get("video")
-        if audio_path:
-            self.video_player_widget.set_audio(audio_path, subtitle_path)
         if video_path:
-            self.video_player_widget.set_current_video_path(video_path)
-        
+            self.video_player_widget.set_video(video_path)
 
     def on_error(self, message):
         print("NewsWorker error:", message)

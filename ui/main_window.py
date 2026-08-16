@@ -1,4 +1,3 @@
-# ui/main_window.py
 from PySide6.QtWidgets import QMainWindow
 
 from ui.video_news_page import VideoNewsPage

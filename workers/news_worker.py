@@ -2,6 +2,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, Signal, Slot
 from dateutil import parser as date_parser
 from dateutil.tz import gettz, tzutc
+import hashlib
 
 from services.news.ai.gemini_service import GeminiService
 from services.news.news_service import NewsService
@@ -16,8 +17,7 @@ from services.news.voice.tts_service import TTSService
 from cache.agenda_cache import AgendaCache
 from services.news.filter.noise_filter import NewsNoiseFilter
 
-# Video servisleri eklendi
-from services.video.template_generator import TemplateGenerator
+from services.video.scrolling_text_generator import ScrollingTextGenerator
 from services.video.audio_mixer import AudioMixer
 
 
@@ -25,9 +25,12 @@ class NewsWorker(QObject):
 
     finished = Signal(dict)
     error = Signal(str)
+    progress = Signal(int)
+    status = Signal(str)
 
     def __init__(self):
         super().__init__()
+
         self.noise_filter = NewsNoiseFilter()
 
         self.news_service = NewsService()
@@ -39,28 +42,39 @@ class NewsWorker(QObject):
         self.category_classifier = CategoryClassifier()
         self.headline_ranker = HeadlineRanker()
         self.importance_calculator = ImportanceCalculator()
-        self.agenda_selector = AgendaSelector(max_per_region=2)
+        self.agenda_selector = AgendaSelector(
+            max_per_region=2
+        )
 
-        # Video Sınıfları
-        self.template_generator = TemplateGenerator()
+        self.scrolling_text_generator = ScrollingTextGenerator()
         self.audio_mixer = AudioMixer()
 
     def _build_tier_lists(self, scored_clusters):
         kritik = []
 
         for cluster in scored_clusters:
-            tier = ImportanceCalculator.tier_for(cluster.score)
+            tier = ImportanceCalculator.tier_for(
+                cluster.score
+            )
 
             if tier != "kritik":
                 continue
 
             item = {
-                "category": getattr(cluster, "category", "") or "",
-                "region": self._resolve_region(cluster),
+                "category": getattr(
+                    cluster,
+                    "category",
+                    ""
+                ) or "",
+                "region": self._resolve_region(
+                    cluster
+                ),
                 "importance": cluster.score,
                 "repeat_count": cluster.repeat_count,
                 "sources": cluster.sources,
-                "body": build_plain_summary(cluster),
+                "body": build_plain_summary(
+                    cluster
+                ),
             }
 
             kritik.append(item)
@@ -76,10 +90,20 @@ class NewsWorker(QObject):
                     "title": getattr(
                         cluster,
                         "translated_title",
-                        getattr(cluster, "title", "")
+                        getattr(
+                            cluster,
+                            "title",
+                            ""
+                        )
                     ),
-                    "summary": build_plain_summary(cluster),
-                    "importance": getattr(cluster, "score", 0)
+                    "summary": build_plain_summary(
+                        cluster
+                    ),
+                    "importance": getattr(
+                        cluster,
+                        "score",
+                        0
+                    )
                 }
             )
 
@@ -91,183 +115,365 @@ class NewsWorker(QObject):
         regions = [
             article.region
             for article in cluster.articles
-            if getattr(article, "region", "")
+            if getattr(
+                article,
+                "region",
+                ""
+            )
         ]
 
         if not regions:
             return ""
 
-        return Counter(regions).most_common(1)[0][0]
+        return Counter(
+            regions
+        ).most_common(1)[0][0]
 
-    def _convert_to_turkey_time(self, published_at):
+    def _convert_to_turkey_time(
+        self,
+        published_at
+    ):
         try:
-            published_date = date_parser.parse(published_at)
+            published_date = date_parser.parse(
+                published_at
+            )
         except Exception:
             return None
 
         if published_date.tzinfo is None:
-            published_date = published_date.replace(tzinfo=tzutc())
+            published_date = published_date.replace(
+                tzinfo=tzutc()
+            )
 
-        istanbul = gettz("Europe/Istanbul")
-        return published_date.astimezone(istanbul)
+        istanbul = gettz(
+            "Europe/Istanbul"
+        )
 
-    def _is_within_agenda_window(self, published_at):
+        return published_date.astimezone(
+            istanbul
+        )
+
+    def _is_within_agenda_window(
+        self,
+        published_at
+    ):
         if published_at is None:
             return True
 
-        turkey_time = self._convert_to_turkey_time(published_at)
+        turkey_time = (
+            self._convert_to_turkey_time(
+                published_at
+            )
+        )
+
         if turkey_time is None:
             return False
 
         hour = turkey_time.hour
+
         return hour >= 19 or hour < 7
 
-    def _filter_agenda_window(self, articles):
-        for article in articles[:5]:
-            turkey_time = None
-            accepted = False
-
-            if article.published_at is None:
-                accepted = True
-            else:
-                turkey_time = self._convert_to_turkey_time(article.published_at)
-                accepted = (
-                    turkey_time is not None
-                    and (turkey_time.hour >= 19 or turkey_time.hour < 7)
-                )
-
-            print(article.published_at)
-            print(turkey_time)
-            print("accepted" if accepted else "rejected")
-
+    def _filter_agenda_window(
+        self,
+        articles
+    ):
         return [
             article
             for article in articles
-            if self._is_within_agenda_window(article.published_at)
+            if self._is_within_agenda_window(
+                article.published_at
+            )
         ]
+
+    def _create_news_hash(
+        self,
+        articles
+    ):
+        items = []
+
+        for article in articles:
+            title = str(
+                getattr(
+                    article,
+                    "title",
+                    ""
+                ) or ""
+            ).strip().lower()
+
+            url = str(
+                getattr(
+                    article,
+                    "url",
+                    ""
+                ) or ""
+            ).strip()
+
+            published_at = str(
+                getattr(
+                    article,
+                    "published_at",
+                    ""
+                ) or ""
+            )
+
+            items.append(
+                f"{title}|{url}|{published_at}"
+            )
+
+        items.sort()
+
+        raw = "\n".join(items)
+
+        return hashlib.sha256(
+            raw.encode("utf-8")
+        ).hexdigest()
+
+    def _load_cached_result(
+        self,
+        data
+    ):
+        audio_path = data.get("audio")
+        video_path = data.get("video")
+
+        if (
+            audio_path
+            and Path(audio_path).exists()
+            and video_path
+            and Path(video_path).exists()
+        ):
+            return True
+
+        return False
 
     @Slot()
     def run(self):
         try:
             print("[NewsWorker] başladı")
 
+            self.status.emit("Sistem kontrol ediliyor...")
+            self.progress.emit(5)
+
             if self.cache.exists_today():
                 print("[NewsWorker] Bugünün gündemi cache'den alınıyor")
+
+                self.status.emit(
+                    "Bugünün gündemi önbellekten yükleniyor..."
+                )
+                self.progress.emit(90)
+
                 data = self.cache.load()
+
                 audio_path = data.get("audio")
                 video_path = data.get("video")
 
                 if (
-                    audio_path and Path(audio_path).exists()
-                    and video_path and Path(video_path).exists()
+                    audio_path
+                    and Path(audio_path).exists()
+                    and video_path
+                    and Path(video_path).exists()
                 ):
+                    self.progress.emit(100)
+                    self.status.emit("Hazır!")
+
                     self.finished.emit(data)
                     return
 
-                print("[NewsWorker] Cache bulundu ancak dosyalar eksik, yeniden oluşturuluyor")
+                print(
+                    "[NewsWorker] Cache bulundu ancak video veya ses dosyası eksik."
+                )
+                print(
+                    "[NewsWorker] Eksik dosyalar yeniden oluşturulacak."
+                )
 
-            # 1 - Haberleri çek
+            self.status.emit("Güncel haberler taranıyor...")
+            self.progress.emit(10)
+
             articles = self.news_service.get_combined_news()
             articles = self.noise_filter.filter(articles)
 
-            # 2 - Gündem aralığına filtrele
-            articles = self._filter_agenda_window(articles)
-            print(f"[NewsWorker] {len(articles)} haber geldi (19:00-07:00 aralığı filtrelendi)")
+            print(
+                f"[NewsWorker] Haber sayısı: {len(articles)}"
+            )
 
-            self.duplicate_detector.diagnose_threshold(articles)
+            self.status.emit(
+                "Gündem saat aralığı filtreleniyor..."
+            )
+            self.progress.emit(20)
+
+            articles = self._filter_agenda_window(articles)
+
+            if not articles:
+                self.error.emit(
+                    "Gündem saat aralığında haber bulunamadı"
+                )
+                return
+
+            self.duplicate_detector.diagnose_threshold(
+                articles
+            )
+
             self.duplicate_detector.inspect_clusters(
                 articles,
                 threshold=0.55,
                 min_size=3
             )
 
-            # 3 - Duplicate temizleme
-            print("[NewsWorker] duplicate başlıyor")
-            clusters = self.duplicate_detector.remove_duplicates(articles)
+            self.status.emit(
+                "Benzer haberler temizleniyor..."
+            )
+            self.progress.emit(30)
 
-            print(f"[NewsWorker] {len(clusters)} cluster oluştu")
+            clusters = self.duplicate_detector.remove_duplicates(
+                articles
+            )
 
-            # 4 - Başlık tekrar sıralaması
-            print("[NewsWorker] headline ranking başlıyor")
-            clusters = self.headline_ranker.rank(clusters)
-            print("[NewsWorker] headline ranking tamamlandı")
+            self.status.emit(
+                "Haber başlıkları sıralanıyor..."
+            )
+            self.progress.emit(40)
 
-            # 5 - Kategori sınıflandırma
-            clusters = self.category_classifier.classify(clusters)
-            print("[NewsWorker] kategori tamamlandı")
+            clusters = self.headline_ranker.rank(
+                clusters
+            )
 
-            # 6 - Algoritmik önem puanı
-            scored_clusters = self.importance_calculator.calculate(clusters)
-            print("[NewsWorker] önem hesaplandı")
+            self.status.emit(
+                "Haber kategorileri sınıflandırılıyor..."
+            )
+            self.progress.emit(45)
+
+            clusters = self.category_classifier.classify(
+                clusters
+            )
+
+            self.status.emit(
+                "Haber önem puanları hesaplanıyor..."
+            )
+            self.progress.emit(50)
+
+            scored_clusters = self.importance_calculator.calculate(
+                clusters
+            )
 
             top_clusters = scored_clusters[:20]
+
             if not top_clusters:
-                print("[NewsWorker] Bugün için yeterli haber bulunamadı")
-                self.error.emit("Bugün için yeterli haber bulunamadı")
+                self.error.emit(
+                    "Bugün için yeterli haber bulunamadı"
+                )
                 return
 
-            top_clusters = self.gemini_service.translate_clusters(top_clusters)
-            print("[NewsWorker] Top cluster çevirisi tamamlandı")
+            self.status.emit(
+                "Haberler yapay zeka ile çevriliyor (Gemini)..."
+            )
+            self.progress.emit(60)
 
-            ai_editor = self.gemini_service.edit_news(top_clusters)
-            print("[NewsWorker] Gemini edit tamamlandı")
+            top_clusters = (
+                self.gemini_service.translate_clusters(
+                    top_clusters
+                )
+            )
 
-            # 7 - Script oluşturuluyor
-            print("[NewsWorker] Script oluşturuluyor")
-            script_news = self._build_script_news(top_clusters)
-            script = self.script_service.generate(script_news)
-            print("[NewsWorker] 8 dakikalık script tamamlandı")
-            print("\n========== SCRIPT ==========")
-            print(script)
-            print("========== END SCRIPT ==========")
+            self.status.emit(
+                "Yapay zeka bülteni düzenliyor..."
+            )
+            self.progress.emit(68)
+
+            ai_editor = self.gemini_service.edit_news(
+                top_clusters
+            )
+
+            self.status.emit(
+                "Haber bülteni metni oluşturuluyor..."
+            )
+            self.progress.emit(75)
+
+            script_news = self._build_script_news(
+                top_clusters
+            )
+
+            script = self.script_service.generate(
+                script_news
+            )
 
             if not script or not script.strip():
-                print("[NewsWorker] Script boş üretildi, işlem iptal ediliyor")
-                self.error.emit("Bugün için yeterli haber bulunamadı")
+                self.error.emit(
+                    "Script boş üretildi, işlem iptal ediliyor"
+                )
                 return
 
-            # 8 - TTS (Seslendirme)
-            print("[NewsWorker] TTS başlıyor")
+            self.status.emit(
+                "Seslendirme (TTS) ve altyazı üretiliyor..."
+            )
+            self.progress.emit(85)
+
             audio_path = None
             subtitle_path = None
+
             try:
-                audio_path, subtitle_path = self.tts_service.generate(
-                    script,
-                    filename="daily_news.mp3"
+                audio_path, subtitle_path = (
+                    self.tts_service.generate(
+                        script,
+                        filename="daily_news.mp3"
+                    )
                 )
-                print("[NewsWorker] Audio:", audio_path)
-                print("[NewsWorker] Subtitle:", subtitle_path)
             except Exception as e:
-                print("[NewsWorker] TTS HATA:", e)
-                self.error.emit("Ses üretimi sırasında hata oluştu")
+                print(
+                    "[NewsWorker] TTS HATA:",
+                    e
+                )
+
+                self.error.emit(
+                    "Ses üretimi sırasında hata oluştu"
+                )
                 return
 
-            if not audio_path or not Path(audio_path).exists():
-                print("[NewsWorker] TTS sonrası audio dosyası bulunamadı")
-                self.error.emit("Ses üretimi sırasında hata oluştu")
+            if (
+                not audio_path
+                or not Path(audio_path).exists()
+            ):
+                self.error.emit(
+                    "Ses dosyası bulunamadı"
+                )
                 return
 
-            # 9 - Video (şablon üzerine ses bindirme / efekt)
-            print("[NewsWorker] Video işleniyor... (Bu işlem biraz sürebilir)")
+            self.status.emit(
+                "Video oluşturuluyor ve ses birleştiriliyor..."
+            )
+            self.progress.emit(95)
+
             video_path = None
+
             try:
-                self.template_generator.create()
-                video_path = self.audio_mixer.create_video(audio_path)
-                print(f"[NewsWorker] Video hazır: {video_path}")
+                scrolling_video = (
+                    self.scrolling_text_generator.create(
+                        script,
+                        audio_path
+                    )
+                )
+
+                video_path = self.audio_mixer.create_video(
+                    scrolling_video,
+                    audio_path
+                )
+
             except Exception as e:
-                print(f"[NewsWorker] Video işleme HATA: {e}")
-                self.error.emit("Video işleme başarısız oldu")
+                print(
+                    f"[NewsWorker] Video işleme HATA: {e}"
+                )
+
+                self.error.emit(
+                    "Video işleme başarısız oldu"
+                )
                 return
 
-            # 10 - Gündem seçimi
-            agenda = self.agenda_selector.select(scored_clusters)
+            agenda = self.agenda_selector.select(
+                scored_clusters
+            )
 
-            # 11 - Kritik haberler
-            kritik = self._build_tier_lists(scored_clusters)
+            kritik = self._build_tier_lists(
+                scored_clusters
+            )
 
-            print("[NewsWorker] tamamlandı")
-
-            # UI'a göndermeden önce cache'e kaydet
             self.cache.save(
                 script,
                 audio_path,
@@ -278,7 +484,13 @@ class NewsWorker(QObject):
                 subtitle=subtitle_path
             )
 
-            # Artık sesi, videoyu ve altyazıyı UI'a dictionary olarak fırlatıyoruz
+            print(
+                "[NewsWorker] Yeni gündem videosu cache'e kaydedildi"
+            )
+
+            self.progress.emit(100)
+            self.status.emit("Tamamlandı!")
+
             self.finished.emit(
                 {
                     "agenda": agenda,
@@ -287,10 +499,16 @@ class NewsWorker(QObject):
                     "script": script,
                     "audio": audio_path,
                     "subtitle": subtitle_path,
-                    "video": video_path,
+                    "video": video_path
                 }
             )
 
         except Exception as e:
-            print("[NewsWorker ERROR]", e)
-            self.error.emit(str(e))
+            print(
+                "[NewsWorker ERROR]",
+                e
+            )
+
+            self.error.emit(
+                str(e)
+            )
