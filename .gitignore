@@ -6,9 +6,22 @@ __pycache__/
 venv/
 .venv/
 
-# API Keys
+# API Keys / Secrets
 .env
 config.py
+license/config.py
+license.json
+**/license.json
+
+# Test / Debug dosyaları
+test_license.py
+test_env.py
+test_openai.py
+test_*.py
+*_test.py
+
+# Lisans üretim scripti
+create_license.py
 
 # IDE
 .vscode/
