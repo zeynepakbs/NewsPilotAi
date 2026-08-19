@@ -1,40 +1,23 @@
 from pathlib import Path
 import subprocess
 
+from paths import get_ffmpeg_path, PRESENTER_SCENE_PNG, PRESENTER_TEMPLATE_MP4
+
 
 # DEPRECATED: Eski presenter/zoompan pipeline. Aktif akış
 # services/video/scrolling_text_generator.py kullanır.
 class TemplateGenerator:
 
     def __init__(self):
-
-        self.root = Path(__file__).resolve().parents[2]
-
-        self.ffmpeg = (
-            self.root
-            / "tools"
-            / "ffmpeg"
-            / "ffmpeg.exe"
-        )
-
-        self.image = (
-            self.root
-            / "assets"
-            / "presenter_scene.png"
-        )
-
-        self.output = (
-            self.root
-            / "assets"
-            / "videos"
-            / "template"
-            / "presenter_template.mp4"
-        )
+        self.ffmpeg = get_ffmpeg_path()
+        self.image = PRESENTER_SCENE_PNG
+        self.output = PRESENTER_TEMPLATE_MP4
 
         self.output.parent.mkdir(
             parents=True,
             exist_ok=True
         )
+
 
 
     def create(self):

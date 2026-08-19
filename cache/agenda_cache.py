@@ -2,12 +2,15 @@ from pathlib import Path
 import json
 from datetime import datetime, timedelta
 
+from paths import DAILY_NEWS_CACHE
+
 
 class AgendaCache:
 
     def __init__(self):
-        self.path = Path("cache/daily_news.json")
-        self.path.parent.mkdir(exist_ok=True)
+        self.path = DAILY_NEWS_CACHE
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
 
     def _agenda_date(self, dt=None):
         if dt is None:

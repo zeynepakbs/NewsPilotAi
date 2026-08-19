@@ -171,7 +171,7 @@ class NewsWorker(QObject):
 
         hour = turkey_time.hour
 
-        return hour >= 19 or hour < 7
+        return 7<= hour < 19
 
     def _filter_agenda_window(
         self,

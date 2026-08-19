@@ -1,6 +1,7 @@
 import edge_tts
 import asyncio
 import os
+from paths import OUTPUTS_DIR
 
 
 class TTSService:
@@ -33,16 +34,12 @@ class TTSService:
         filename="headless_voice.mp3"
     ):
 
-        output = os.path.join(
-            "outputs",
-            filename
-        )
-
-
-        os.makedirs(
-            "outputs",
+        OUTPUTS_DIR.mkdir(
+            parents=True,
             exist_ok=True
         )
+
+        output = str(OUTPUTS_DIR / filename)
 
 
         asyncio.run(
@@ -51,6 +48,7 @@ class TTSService:
                 output
             )
         )
+
 
 
         print(

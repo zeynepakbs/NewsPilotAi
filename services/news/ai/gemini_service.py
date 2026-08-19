@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from collections import Counter
 from dataclasses import replace
 from typing import Any, Dict, List
@@ -16,10 +17,83 @@ class GeminiService:
     TRANSLATE_CHUNK = 8
     MAX_DESCRIPTION_CHARS = 400
 
+    # Gemini geçici olarak 503 döndürürse:
+    MAX_RETRIES = 3
+    RETRY_BASE_DELAY = 5
+
     def __init__(self):
         self.client = GeminiClient()
+
         # translate ve edit işlemleri için ayrı cache alanları
-        self.cache = {'translate': {}, 'edit': {}}
+        self.cache = {
+            'translate': {},
+            'edit': {}
+        }
+
+    # ============================================================
+    # GEMINI REQUEST / RETRY
+    # ============================================================
+
+    def _ask_with_retry(
+        self,
+        prompt: str,
+        max_retries: int = MAX_RETRIES,
+        base_delay: int = RETRY_BASE_DELAY
+    ) -> str:
+        """
+        Gemini API geçici olarak 503 / UNAVAILABLE döndürürse
+        exponential backoff ile tekrar dener.
+
+        Bekleme:
+            1. retry -> 5 saniye
+            2. retry -> 10 saniye
+            3. retry -> 20 saniye
+
+        Geçici olmayan hatalar doğrudan yukarı fırlatılır.
+        """
+
+        for attempt in range(max_retries):
+            try:
+                return self.client.ask(prompt)
+
+            except Exception as exc:
+                error_text = str(exc)
+
+                is_temporary_error = (
+                    "503" in error_text
+                    or "UNAVAILABLE" in error_text
+                    or "high demand" in error_text.lower()
+                    or "overloaded" in error_text.lower()
+                    or "temporarily unavailable" in error_text.lower()
+                )
+
+                # 503 olmayan hatalarda retry yapma
+                if not is_temporary_error:
+                    raise
+
+                # Son denemeyse artık hatayı yukarı gönder
+                if attempt >= max_retries - 1:
+                    print(
+                        f"[GeminiService] Gemini unavailable after "
+                        f"{max_retries} attempts."
+                    )
+                    raise
+
+                delay = base_delay * (2 ** attempt)
+
+                print(
+                    f"[GeminiService] Gemini temporarily unavailable "
+                    f"(attempt {attempt + 1}/{max_retries}). "
+                    f"Retrying in {delay}s..."
+                )
+
+                time.sleep(delay)
+
+        raise RuntimeError("Gemini request failed unexpectedly.")
+
+    # ============================================================
+    # HELPERS
+    # ============================================================
 
     @staticmethod
     def _hash_value(value: str) -> str:
@@ -29,9 +103,15 @@ class GeminiService:
     def _truncate(text: str) -> str:
         if not text:
             return ''
+
         if len(text) <= GeminiService.MAX_DESCRIPTION_CHARS:
             return text
-        return text[:GeminiService.MAX_DESCRIPTION_CHARS].rsplit(' ', 1)[0] + '...'
+
+        return (
+            text[:GeminiService.MAX_DESCRIPTION_CHARS]
+            .rsplit(' ', 1)[0]
+            + '...'
+        )
 
     @staticmethod
     def _resolve_region(cluster: HeadlineCluster) -> str:
@@ -40,11 +120,21 @@ class GeminiService:
             for article in cluster.articles
             if getattr(article, 'region', '')
         ]
+
         if not regions:
             return 'Global'
+
         return Counter(regions).most_common(1)[0][0]
 
-    def translate_articles(self, articles: List[Article]) -> List[Article]:
+    # ============================================================
+    # ARTICLE TRANSLATION
+    # ============================================================
+
+    def translate_articles(
+        self,
+        articles: List[Article]
+    ) -> List[Article]:
+
         to_translate = [
             (i, article)
             for i, article in enumerate(articles)
@@ -55,48 +145,88 @@ class GeminiService:
             return articles
 
         result = list(articles)
-        print(f'[GeminiService] Translating {len(to_translate)} non-English articles')
 
-        for start in range(0, len(to_translate), self.TRANSLATE_CHUNK):
-            chunk = to_translate[start:start + self.TRANSLATE_CHUNK]
+        print(
+            f'[GeminiService] Translating '
+            f'{len(to_translate)} non-English articles'
+        )
+
+        for start in range(
+            0,
+            len(to_translate),
+            self.TRANSLATE_CHUNK
+        ):
+            chunk = to_translate[
+                start:start + self.TRANSLATE_CHUNK
+            ]
+
             prompt = self._build_translate_prompt(chunk)
-            
+
             cache_key = self._hash_value(prompt)
+
             response = self.cache['translate'].get(cache_key)
-            
+
             if response is None:
-                response = self.client.ask(prompt)
+                response = self._ask_with_retry(prompt)
                 self.cache['translate'][cache_key] = response
-                
+
             translations = self.client.parse_json(response)
-            
+
             if not isinstance(translations, list):
-                print('[GeminiService] Unexpected translate response format:', type(translations))
+                print(
+                    '[GeminiService] Unexpected translate '
+                    'response format:',
+                    type(translations)
+                )
                 continue
-                
+
             for item in translations:
                 try:
                     index = int(item.get('index'))
+
                     original_index, article = chunk[index]
+
                     result[original_index] = replace(
                         article,
-                        title=item.get('title', article.title),
-                        description=item.get('description', article.description),
+                        title=item.get(
+                            'title',
+                            article.title
+                        ),
+                        description=item.get(
+                            'description',
+                            article.description
+                        ),
                         lang='en'
                     )
+
                 except Exception as exc:
-                    print('[GeminiService] translate chunk apply error:', exc)
+                    print(
+                        '[GeminiService] '
+                        'translate chunk apply error:',
+                        exc
+                    )
 
         return result
 
-    def _build_translate_prompt(self, chunk: List[Any]) -> str:
+    def _build_translate_prompt(
+        self,
+        chunk: List[Any]
+    ) -> str:
+
         items = ''
+
         for idx, (_, article) in enumerate(chunk):
-            items += f"\n{idx})\nTitle:\n{article.title}\n\nDescription:\n{self._truncate(article.description)}\n\n"
-        
+            items += (
+                f"\n{idx})\n"
+                f"Title:\n{article.title}\n\n"
+                f"Description:\n"
+                f"{self._truncate(article.description)}\n\n"
+            )
+
         return (
             "You are a professional translator."
-            "\nTranslate every news title and description into fluent English."
+            "\nTranslate every news title and description "
+            "into fluent English."
             "\nRules:\n"
             "- Preserve the original meaning.\n"
             "- Preserve names.\n"
@@ -107,18 +237,39 @@ class GeminiService:
             "- Return ONLY a valid JSON array.\n"
             "- Do not use markdown.\n"
             "- Do not add extra text.\n"
-            "\nJSON format:\n[\n  {\n    \"index\": 0,\n    \"title\": \"...\",\n    \"description\": \"...\"\n  }\n]\n\n"
+            "\nJSON format:\n"
+            "[\n"
+            "  {\n"
+            "    \"index\": 0,\n"
+            "    \"title\": \"...\",\n"
+            "    \"description\": \"...\"\n"
+            "  }\n"
+            "]\n\n"
             f"News:{items}"
         )
 
-    def translate_clusters(self, clusters: List[HeadlineCluster]) -> List[HeadlineCluster]:
+    # ============================================================
+    # CLUSTER TRANSLATION
+    # ============================================================
+
+    def translate_clusters(
+        self,
+        clusters: List[HeadlineCluster]
+    ) -> List[HeadlineCluster]:
+
         if not clusters:
             return clusters
 
         items = ""
+
         for idx, cluster in enumerate(clusters):
-            # hasattr veya getattr ile güvenli erişim (opsiyonel ama daha güvenli)
-            summary_text = getattr(cluster, 'summary', '') 
+
+            summary_text = getattr(
+                cluster,
+                'summary',
+                ''
+            )
+
             items += (
                 f"\n{idx})\n"
                 f"Title:\n{cluster.title}\n\n"
@@ -127,7 +278,8 @@ class GeminiService:
 
         prompt = (
             "You are a professional translator.\n"
-            "Translate every news headline and summary into fluent English.\n"
+            "Translate every news headline and summary "
+            "into fluent English.\n"
             "Preserve names, numbers and meaning.\n"
             "Do not summarize.\n"
             "Return ONLY valid JSON.\n\n"
@@ -143,63 +295,119 @@ class GeminiService:
         )
 
         cache_key = self._hash_value(prompt)
+
         response = self.cache["translate"].get(cache_key)
 
         if response is None:
-            response = self.client.ask(prompt)
+            response = self._ask_with_retry(prompt)
             self.cache["translate"][cache_key] = response
 
         translations = self.client.parse_json(response)
 
         if not isinstance(translations, list):
-            print("[GeminiService] Unexpected translate format")
+            print(
+                "[GeminiService] "
+                "Unexpected translate format"
+            )
             return clusters
 
         for item in translations:
             try:
                 cluster = clusters[int(item["index"])]
-                cluster.title = item.get("title", cluster.title)
-                cluster.summary = item.get("summary", getattr(cluster, 'summary', ''))
-            except Exception as e:
-                print("[GeminiService]", e)
 
-        print(f"[GeminiService] Translated {len(clusters)} clusters")
+                cluster.title = item.get(
+                    "title",
+                    cluster.title
+                )
+
+                cluster.summary = item.get(
+                    "summary",
+                    getattr(cluster, 'summary', '')
+                )
+
+            except Exception as e:
+                print(
+                    "[GeminiService]",
+                    e
+                )
+
+        print(
+            f"[GeminiService] "
+            f"Translated {len(clusters)} clusters"
+        )
+
         return clusters
 
-    def edit_news(self, clusters: List[HeadlineCluster]) -> List[Dict[str, Any]]:
+    # ============================================================
+    # NEWS EDITOR
+    # ============================================================
+
+    def edit_news(
+        self,
+        clusters: List[HeadlineCluster]
+    ) -> List[Dict[str, Any]]:
+
         if not clusters:
             return []
 
         stories = []
+
         for cluster in clusters:
             stories.append({
                 'title': cluster.title,
-                'summary': getattr(cluster, 'summary', '') or '',
-                'category': getattr(cluster, 'category', '') or '',
-                'importance_score': getattr(cluster, 'importance_score', 0),
+                'summary': (
+                    getattr(
+                        cluster,
+                        'summary',
+                        ''
+                    ) or ''
+                ),
+                'category': (
+                    getattr(
+                        cluster,
+                        'category',
+                        ''
+                    ) or ''
+                ),
+                'importance_score': getattr(
+                    cluster,
+                    'importance_score',
+                    0
+                ),
                 'repeat_count': cluster.repeat_count,
                 'source_count': cluster.source_count,
                 'region': self._resolve_region(cluster),
             })
 
         prompt = self._build_editor_prompt(stories)
+
         cache_key = self._hash_value(prompt)
+
         response = self.cache['edit'].get(cache_key)
-        
+
         if response is None:
-            response = self.client.ask(prompt)
+            response = self._ask_with_retry(prompt)
             self.cache['edit'][cache_key] = response
-            
+
         result = self.client.parse_json(response)
-        
+
         if not isinstance(result, list):
-            print('[GeminiService] Unexpected edit response format:', type(result))
+            print(
+                '[GeminiService] '
+                'Unexpected edit response format:',
+                type(result)
+            )
             return []
-            
+
         return result
 
-    def _build_editor_prompt(self, stories: List[Dict[str, Any]]) -> str:
+    def _build_editor_prompt(
+        self,
+        stories: List[Dict[str, Any]]
+    ) -> str:
+
         items = ''
+
         for idx, story in enumerate(stories):
             items += (
                 f"\n{idx})\n"
@@ -207,24 +415,35 @@ class GeminiService:
                 f"Summary: {story['summary']}\n"
                 f"Category: {story['category']}\n"
                 f"Region: {story['region']}\n"
-                f"Importance: {story['importance_score']}\n"
-                f"Repeat Count: {story['repeat_count']}\n"
-                f"Source Count: {story['source_count']}\n\n"
+                f"Importance: "
+                f"{story['importance_score']}\n"
+                f"Repeat Count: "
+                f"{story['repeat_count']}\n"
+                f"Source Count: "
+                f"{story['source_count']}\n\n"
             )
-            
+
         return (
             "You are a professional news editor.\n"
-            "For each story provided, analyze the headline and summary like an editor at a global news agency.\n"
+            "For each story provided, analyze the "
+            "headline and summary like an editor at "
+            "a global news agency.\n"
             "Output a JSON array with one object per story.\n"
             "Do not use markdown, do not add any extra text.\n"
             "\nEach item must contain:\n"
-            "- title: a polished English headline for the story\n"
-            "- summary: a short professional English editor summary\n"
+            "- title: a polished English headline "
+            "for the story\n"
+            "- summary: a short professional English "
+            "editor summary\n"
             "- why_it_matters: why this story is important\n"
             "- impact: one of LOW, MEDIUM, HIGH\n"
             "- tags: a list of relevant keywords\n\n"
             f"Input stories:{items}"
         )
+
+    # ============================================================
+    # DAILY NEWS SCRIPT
+    # ============================================================
 
     def generate_daily_news_script(
         self,
@@ -232,19 +451,26 @@ class GeminiService:
         duration_minutes: int = 8
     ) -> str:
         """
-        Düzenlenmiş haberlerden düz metin formatında (JSON olmayan) 
-        bir haber programı senaryosu üretir.
+        Düzenlenmiş haberlerden düz metin formatında
+        haber programı senaryosu üretir.
         """
+
         if not stories:
             return ""
 
-        print(f"[GeminiService] Generating {duration_minutes}-minute daily news script...")
-        
-        prompt = self._build_script_prompt(stories, duration_minutes)
-        
-        # Sadece senaryo (düz metin) döneceği için parse_json kullanmıyoruz.
-        response = self.client.ask(prompt)
-        
+        print(
+            f"[GeminiService] Generating "
+            f"{duration_minutes}-minute daily news script..."
+        )
+
+        prompt = self._build_script_prompt(
+            stories,
+            duration_minutes
+        )
+
+        # Sadece senaryo döndüğü için parse_json kullanılmıyor.
+        response = self._ask_with_retry(prompt)
+
         return response
 
     def _build_script_prompt(
@@ -252,17 +478,31 @@ class GeminiService:
         stories: List[Dict[str, Any]],
         duration_minutes: int
     ) -> str:
-        """
-        Senaryo üretimi için LLM promptunu hazırlar.
-        """
+
         items = ""
+
         for idx, story in enumerate(stories):
-            # edit_news'ten dönen formata göre verileri alıyoruz
-            title = story.get('title', '')
-            summary = story.get('summary', '')
-            why = story.get('why_it_matters', '')
-            impact = story.get('impact', '')
-            
+
+            title = story.get(
+                'title',
+                ''
+            )
+
+            summary = story.get(
+                'summary',
+                ''
+            )
+
+            why = story.get(
+                'why_it_matters',
+                ''
+            )
+
+            impact = story.get(
+                'impact',
+                ''
+            )
+
             items += (
                 f"\nStory {idx + 1}:\n"
                 f"Headline: {title}\n"
@@ -272,15 +512,25 @@ class GeminiService:
             )
 
         return (
-            f"You are a professional, engaging news anchor hosting a daily news podcast.\n"
-            f"Your task is to write a script for a {duration_minutes}-minute daily news show.\n\n"
+            f"You are a professional, engaging "
+            f"news anchor hosting a daily news podcast.\n"
+            f"Your task is to write a script for a "
+            f"{duration_minutes}-minute daily news show.\n\n"
             "Rules:\n"
-            "- Write in a conversational, spoken-word style (radio/podcast tone) using natural B2–C1 English.\n"
-            "- Keep the English fluent, conversational, and human-like. Do not sound as simple as B1 or as unnecessarily advanced as C2.\n"
-            "- Include an engaging intro welcoming the listeners.\n"
-            "- Use smooth, natural transitions between stories.\n"
+            "- Write in a conversational, spoken-word "
+            "style (radio/podcast tone) using natural "
+            "B2–C1 English.\n"
+            "- Keep the English fluent, conversational, "
+            "and human-like. Do not sound as simple as "
+            "B1 or as unnecessarily advanced as C2.\n"
+            "- Include an engaging intro welcoming "
+            "the listeners.\n"
+            "- Use smooth, natural transitions "
+            "between stories.\n"
             "- Conclude with a warm outro.\n"
-            "- DO NOT return JSON. Return ONLY the plain text script.\n"
-            "- Base your script ONLY on the following stories:\n\n"
+            "- DO NOT return JSON. Return ONLY the "
+            "plain text script.\n"
+            "- Base your script ONLY on the following "
+            "stories:\n\n"
             f"{items}"
         )

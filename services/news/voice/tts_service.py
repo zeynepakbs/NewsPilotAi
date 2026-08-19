@@ -1,6 +1,8 @@
 import edge_tts
 import asyncio
 import os
+from paths import OUTPUTS_DIR
+
 
 
 class TTSService:
@@ -58,15 +60,12 @@ class TTSService:
         print("[TTS] başladı")
         print("[TTS] karakter sayısı:", len(text))
 
-        os.makedirs(
-            "outputs",
+        OUTPUTS_DIR.mkdir(
+            parents=True,
             exist_ok=True
         )
 
-        output = os.path.join(
-            "outputs",
-            filename
-        )
+        output = str(OUTPUTS_DIR / filename)
 
         audio_path, subtitle_path = asyncio.run(
             self._generate(
@@ -74,6 +73,7 @@ class TTSService:
                 output
             )
         )
+
 
         if os.path.exists(audio_path):
             size = os.path.getsize(audio_path) / 1024

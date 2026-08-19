@@ -37,3 +37,7 @@ tools/ffmpeg/*.exe
 outputs/*.mp3
 assets/videos/output/*
 cache/*.json
+
+# PyInstaller
+build/
+dist/

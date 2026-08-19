@@ -1,32 +1,25 @@
 from pathlib import Path
 import subprocess
 
+from paths import get_ffmpeg_path, LATEST_NEWS_VIDEO
+
 
 class AudioMixer:
 
     def __init__(self):
-
-        self.root = Path(__file__).resolve().parents[2]
-
-        self.ffmpeg = (
-            self.root
-            / "tools"
-            / "ffmpeg"
-            / "ffmpeg.exe"
-        )
-
-        self.output = (
-            self.root
-            / "assets"
-            / "videos"
-            / "output"
-            / "latest_news.mp4"
-        )
+        self.ffmpeg = get_ffmpeg_path()
+        self.output = LATEST_NEWS_VIDEO
 
         self.output.parent.mkdir(
             parents=True,
             exist_ok=True
         )
+
+        if not self.ffmpeg.exists():
+            raise FileNotFoundError(
+                f"ffmpeg.exe bulunamadı: {self.ffmpeg}"
+            )
+
 
     def create_video(
         self,
@@ -51,39 +44,18 @@ class AudioMixer:
             self.output.unlink()
 
         command = [
-
             str(self.ffmpeg),
-
             "-y",
-
-            "-i",
-            str(video),
-
-            "-i",
-            str(audio),
-
-            "-map",
-            "0:v:0",
-
-            "-map",
-            "1:a:0",
-
-            "-c:v",
-            "libx264",
-
-            "-preset",
-            "fast",
-
-            "-c:a",
-            "aac",
-
-            "-b:a",
-            "192k",
-
+            "-i", str(video),
+            "-i", str(audio),
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-c:a", "aac",
+            "-b:a", "192k",
             "-shortest",
-
             str(self.output),
-
         ]
 
         subprocess.run(

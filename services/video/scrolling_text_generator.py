@@ -7,6 +7,16 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from paths import (
+    WIN_FONTS_DIR,
+    TEMPLATE_VIDEOS_DIR,
+    SCROLLING_TEXT_STRIP_PNG,
+    SCROLLING_TEXT_VIDEO_MP4,
+    get_ffmpeg_path,
+    get_ffprobe_path,
+)
+
+
 
 class ScrollingTextGenerator:
     """
@@ -50,44 +60,17 @@ class ScrollingTextGenerator:
     MIN_DURATION = 5.0
 
     def __init__(self):
-
-        self.root = Path(__file__).resolve().parents[2]
-
-        self.ffmpeg = (
-            self.root
-            / "tools"
-            / "ffmpeg"
-            / "ffmpeg.exe"
-        )
-
-        self.ffprobe = (
-            self.root
-            / "tools"
-            / "ffmpeg"
-            / "ffprobe.exe"
-        )
-
-        self.temp_dir = (
-            self.root
-            / "assets"
-            / "videos"
-            / "template"
-        )
+        self.ffmpeg = get_ffmpeg_path()
+        self.ffprobe = get_ffprobe_path()
+        self.temp_dir = TEMPLATE_VIDEOS_DIR
 
         self.temp_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
 
-        self.text_strip_path = (
-            self.temp_dir
-            / "scrolling_text_strip.png"
-        )
-
-        self.video_output = (
-            self.temp_dir
-            / "scrolling_text_video.mp4"
-        )
+        self.text_strip_path = SCROLLING_TEXT_STRIP_PNG
+        self.video_output = SCROLLING_TEXT_VIDEO_MP4
 
         # Eski dosyaları temizle
         if self.text_strip_path.exists():
@@ -101,6 +84,7 @@ class ScrollingTextGenerator:
                 self.video_output.unlink()
             except PermissionError:
                 pass
+
 
     # ============================================================
     # PUBLIC
@@ -296,32 +280,20 @@ class ScrollingTextGenerator:
         candidates = []
 
         if bold:
-
             candidates.extend(
                 [
-                    Path(
-                        "C:/Windows/Fonts/"
-                        "segoeuib.ttf"
-                    ),
-                    Path(
-                        "C:/Windows/Fonts/"
-                        "arialbd.ttf"
-                    ),
+                    WIN_FONTS_DIR / "segoeuib.ttf",
+                    WIN_FONTS_DIR / "arialbd.ttf",
                 ]
             )
 
         candidates.extend(
             [
-                Path(
-                    "C:/Windows/Fonts/"
-                    "segoeui.ttf"
-                ),
-                Path(
-                    "C:/Windows/Fonts/"
-                    "arial.ttf"
-                ),
+                WIN_FONTS_DIR / "segoeui.ttf",
+                WIN_FONTS_DIR / "arial.ttf",
             ]
         )
+
 
         for candidate in candidates:
 
